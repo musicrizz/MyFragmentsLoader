@@ -70,14 +70,14 @@ int main(int argc, char **argv) {
 		if(strcmp(argv[i], "-r") == 0 ) recursive = true;
 	}
 
-	if(default_vertex_file.empty() || fragment_folder.empty())  {
+	if(vertex_shader_file.empty() || fragments_folder.empty())  {
 		usage();
 		return -1;
 	}
 
-	LOG(DEBUG)<<"Input parameter : "<<default_vertex_file.c_str()<<" - "<<fragment_folder.c_str()<<endl;
+	LOG(DEBUG)<<"Input parameter : "<<vertex_shader_file.c_str()<<" - "<<fragments_folder.c_str()<<endl;
 
-	if(fs::is_regular_file(default_vertex_file))  {
+	if(fs::is_regular_file(vertex_shader_file))  {
 		LOG(DEBUG)<<"OK default vertex is regular";
 	}else{
 		LOG(DEBUG)<<"Problem default vertex";
@@ -127,18 +127,21 @@ int main(int argc, char **argv) {
 	OpenGLContext::setMouseCursorPos(mouseCallback);
 	OpenGLContext::setKeyboard(keyboard);
 
-	loadFragmentFiles(fragment_folder);
+	loadFragmentFiles(fragments_folder);
 
 	//CREATE DEFAULT PROGRAM FOR DISPLAY COMPILATION ERROR in position 0
 	//_default_program.init();
 
+	//Binding point for uniform_buffer CommonUniform shared among all fragments
 	unsigned int uniform_binding_point = 2;
+
+	//Program Name
 	string name;
 	for(const auto &f : fragments_map)  {
 		try{
 			name = f.first.substr(f.first.find_last_of("/\\")+1);
 			LOG(DEBUG)<<"File to load : "<<name<<endl;
-			ShaderMap::createProgram( name , default_vertex_file.c_str(), f.first.c_str());
+			ShaderMap::createProgram( name , vertex_shader_file.c_str(), f.first.c_str());
 			ShaderMap::getProgram(name)->setBindingPoint(uniform_binding_point);
 			programs.push_back({name, f.first, "", false});
 		}catch (ShaderException &e) {
@@ -178,13 +181,10 @@ int main(int argc, char **argv) {
 
 	LOG(DEBUG)<<OpenGLerror::check("creation buffer vertex");
 
-	unsigned int vertex_loc = 1;//this location is defined in the shader
-	//ShaderMap::getAttributeLocation ....
-
 	glBindVertexArray(vaos[V]);
 	glBindBuffer(GL_ARRAY_BUFFER, buffers[B_VERTEX]);
-		glVertexAttribPointer(vertex_loc, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), reinterpret_cast<void*>(0));
-		glEnableVertexAttribArray(vertex_loc);
+		glVertexAttribPointer(ShaderMap::getAttributeLocation("position"), 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), reinterpret_cast<void*>(0));
+		glEnableVertexAttribArray(ShaderMap::getAttributeLocation("position"));
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 

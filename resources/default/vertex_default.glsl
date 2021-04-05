@@ -12,10 +12,10 @@ layout (std140) uniform CommonUniform
 };
 
 //do not modify
-//layout(location = 3) uniform sampler2D texture1;
+layout(location = 1) in vec4 position;
 
 //do not modify
-layout(location = 1) in vec4 position;
+layout(location = 3) uniform sampler2D texture1;
 
 
 void main(void)    {

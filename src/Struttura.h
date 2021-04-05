@@ -20,8 +20,8 @@ namespace fs = std::filesystem;
 
 //----------------------------------------------------------------
 //-----INPUT PARAMETERS
-fs::path default_vertex_file = "resources/default/vertex_default.glsl",
-		fragment_folder = "";
+fs::path vertex_shader_file = "resources/default/vertex_default.glsl",//default value
+		fragments_folder = "";
 bool recursive = false;
 
 bool file_order (string a, string b) {
@@ -31,13 +31,13 @@ bool(*file_order_pt)(string,string) = file_order;
 map<string, fs::file_time_type, bool(*)(string,string)> fragments_map (file_order_pt);
 
 bool setVertexFile(char* v) {
-	default_vertex_file = v;
-	return fs::is_regular_file(default_vertex_file);
+	vertex_shader_file = v;
+	return fs::is_regular_file(vertex_shader_file);
 }
 
 bool setFragmentFolder(char* v) {
-	fragment_folder = v;
-	return fs::is_directory(fragment_folder);
+	fragments_folder = v;
+	return fs::is_directory(fragments_folder);
 }
 
 void loadFragmentFiles(fs::path dir)  {
@@ -68,7 +68,6 @@ vector<PROGRAM_FILE> programs;
 
 //-------------------------------------------------
 //----------------DEFAULT ERROR PROGRAM------------------------------
-
 
 struct DEFAULT_PROGRAM {
 private:
