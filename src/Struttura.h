@@ -67,23 +67,23 @@ int current_program = 0;
 vector<PROGRAM_FILE> programs;
 
 //-------------------------------------------------
-//----------------DEFAULT ERROR PROGRAM------------------------------
+//----------------DEFAULT PROGRAM - used to display errors------------------------------
 
 struct DEFAULT_PROGRAM {
 private:
 	unsigned int vaos = -1;
 
 public:
-	const string NAME = "ERROR_ROGRAM_musicrizz";
+	const string NAME = "DEFAULT_ROGRAM_MyFragmentsLoader";
 
 	void init()  {
-//		try{
-//			ShaderMap::createProgram(NAME , "resources/default/vertex.glsl", "resources/default/fragment.glsl");
-//			programs.push_back({NAME, NULL, "", false});
-//		}catch (ShaderException &e) {
-//			cerr<<"ERROR LOADING DEFAULT PROGRAM : "<<e.what()<<endl;
-//			exit(-1);
-//		}
+		try{
+			ShaderMap::createProgram(NAME , "resources/default/vertex_default.glsl", "resources/default/fragment_error.glsl");
+			programs.push_back({NAME, NULL, "", false});
+		}catch (ShaderException &e) {
+			cerr<<"ERROR LOADING DEFAULT PROGRAM : "<<e.what()<<endl;
+			exit(-1);
+		}
 //
 //		glGenVertexArrays(1, vaos);
 //		glGenBuffers(BUFFERS_NUM, buffers);

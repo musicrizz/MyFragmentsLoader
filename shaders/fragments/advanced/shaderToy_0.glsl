@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 // http://www.pouet.net/prod.php?which=57245
 // If you intend to reuse this shader, please add credits to 'Danilo Guanabara'

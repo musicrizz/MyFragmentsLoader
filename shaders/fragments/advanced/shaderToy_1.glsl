@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 /*
  * I believe that the code is clear enough, so I will save comments :)

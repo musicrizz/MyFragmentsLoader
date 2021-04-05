@@ -130,9 +130,9 @@ int main(int argc, char **argv) {
 	loadFragmentFiles(fragments_folder);
 
 	//CREATE DEFAULT PROGRAM FOR DISPLAY COMPILATION ERROR in position 0
-	//_default_program.init();
+	_default_program.init();
 
-	//Binding point for uniform_buffer CommonUniform shared among all fragments
+	//Binding point for uniform_buffer 'CommonUniform' shared among all fragments
 	unsigned int uniform_binding_point = 2;
 
 	//Program Name
