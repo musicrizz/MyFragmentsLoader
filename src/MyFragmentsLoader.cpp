@@ -17,9 +17,10 @@ INITIALIZE_EASYLOGGINGPP
 
 void usage()  {
 	cout<<"USAGE: MyFragmentsLoader -f <fragment_shaders_folder> \n"
-			"\t-f   : specify folder where are located all fragment shaders \n"
-			"\t-r   : (optional) set recursive search in subfolder of fragment folder \n"
-			"\t-v   : (optional) specify your vertex shader file that will common to all fragment . ('overwrite the default') \n";
+			//"\t -f   : folder where are located all fragment shaders \n" - TO DO
+			"\t -t   : (optional) folder of texture images. ('will be loaded max 4 in alphabetically order')\n"
+			"\t -r   : (optional) set recursive search in subfolder of fragment folder \n"
+			"\t -v   : (optional) your vertex shader file that will be common to all fragments. ('overwrite the default') \n";
 }
 
 void keyboard(GLFWwindow* window, int key, int scancose, int action, int mods);
@@ -30,12 +31,6 @@ void updateTime();
 
 int viewport_w, viewport_h;
 float viewport_aspect;
-
-enum VAO {V, VAOS_NUM};
-unsigned int vaos[VAOS_NUM];
-
-enum BUFFERS {B_VERTEX, UNIFORM, BUFFERS_NUM};
-unsigned int buffers[BUFFERS_NUM];
 
 static const char *CONTEXT="CONTEX_BASE",
 				  *FPS_TIME="FPS_TIME";
@@ -130,19 +125,17 @@ int main(int argc, char **argv) {
 	loadFragmentFiles(fragments_folder);
 
 	//CREATE DEFAULT PROGRAM FOR DISPLAY COMPILATION ERROR in position 0
-	_default_program.init();
+	_base_system.createDefaultProgram();
 
-	//Binding point for uniform_buffer 'CommonUniform' shared among all fragments
-	unsigned int uniform_binding_point = 2;
-
-	//Program Name
+	//Create a program for each file
 	string name;
 	for(const auto &f : fragments_map)  {
 		try{
 			name = f.first.substr(f.first.find_last_of("/\\")+1);
 			LOG(DEBUG)<<"File to load : "<<name<<endl;
 			ShaderMap::createProgram( name , vertex_shader_file.c_str(), f.first.c_str());
-			ShaderMap::getProgram(name)->setBindingPoint(uniform_binding_point);
+			//set Binding point for uniform_buffer
+			ShaderMap::getProgram(name)->setBindingPoint(_base_system.uniform_binding_point);
 			programs.push_back({name, f.first, "", false});
 		}catch (ShaderException &e) {
 			LOG(DEBUG)<<"Error program creation : "<< f.first << " :" <<e.what()<<endl;
@@ -151,7 +144,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (programs.size() == 0)  {
-		cerr<<"ERRORE NESSUN PROGRAMMMYA CARICATO"<<endl;
+		cerr<<"ERROR NO PROGRAM LOADED"<<endl;
 		exit(-1);
 	}
 
@@ -161,57 +154,8 @@ int main(int argc, char **argv) {
 		LOG(DEBUG)<<"Struttura : "<<p.name<<" \n\t "<<p.path<<" \n\t "<<p.error<<" \n\t "<<p.error_status<<endl;
 	}
 
-	LOG(DEBUG)<<"--------- Inizio caricamento openGl-------------------\n";
+	_base_system.initOpenGL();
 
-	ShaderMap::useProgram(programs[current_program].name);
-	LOG(DEBUG)<<"Use program : "<<programs[current_program].name <<endl;
-
-	glGenVertexArrays(VAOS_NUM, vaos);
-	glGenBuffers(BUFFERS_NUM, buffers);
-
-	glBindBuffer(GL_ARRAY_BUFFER, buffers[B_VERTEX]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*4, NULL, GL_STATIC_DRAW);
-	glm::vec4* v = (glm::vec4*)glMapBuffer(GL_ARRAY_BUFFER,GL_WRITE_ONLY);
-		*v++ = glm::vec4(-1.0f, -1.0f, 0.0f, 1.0f);
-		*v++ = glm::vec4( 1.0f, -1.0f, 0.0f, 1.0f);
-		*v++ = glm::vec4( 1.0f,  1.0f, 0.0f, 1.0f);
-		*v   = glm::vec4(-1.0f,  1.0f, 0.0f, 1.0f);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	LOG(DEBUG)<<OpenGLerror::check("creation buffer vertex");
-
-	glBindVertexArray(vaos[V]);
-	glBindBuffer(GL_ARRAY_BUFFER, buffers[B_VERTEX]);
-		glVertexAttribPointer(ShaderMap::getAttributeLocation("position"), 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), reinterpret_cast<void*>(0));
-		glEnableVertexAttribArray(ShaderMap::getAttributeLocation("position"));
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	LOG(DEBUG)<<OpenGLerror::check("creation buffer VAO");
-
-	ShaderMap::bindingUniformBlocks("CommonUniform", uniform_binding_point);
-	glBindBufferBase(GL_UNIFORM_BUFFER, uniform_binding_point, buffers[UNIFORM]);
-
-	LOG(DEBUG)<<OpenGLerror::check("Binding uniform Buffer");
-
-	glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
-		glBufferData(GL_UNIFORM_BUFFER, 20, NULL, GL_DYNAMIC_DRAW); // allocate 20 bytes of memory
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	LOG(DEBUG)<<OpenGLerror::check("CREAZIOEN GL_UNIFORM_BUFFER : ")<<endl;
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-	glDepthRange(0.0, 1.0);
-	glDepthMask(true);
-	glClearDepth(1.0f);
-	glEnable(GL_LINE_SMOOTH);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glColorMask(true, true, true, true);
-//	//glEnable(GL_BLEND);
-//	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//
 	glfwGetFramebufferSize(OpenGLContext::getCurrent(), &viewport_w, &viewport_h);
 	viewport_aspect = float(viewport_h) / float(viewport_w);
 	flag_update_viewport = true;
@@ -219,8 +163,6 @@ int main(int argc, char **argv) {
 	glfwSwapInterval(1);
 
 	cout<<OpenGLerror::check("Finish setUp Opengl");
-
-	glBindVertexArray(vaos[V]);
 
 	while (!glfwWindowShouldClose(OpenGLContext::getCurrent())) {
 

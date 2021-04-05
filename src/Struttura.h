@@ -54,7 +54,7 @@ void loadFragmentFiles(fs::path dir)  {
 //-----------PROGRAMS FILES-------------------------------------------------
 
 //represent a program files loaded or not
-//for polling the status
+//for monitoring the status
 struct PROGRAM_FILE {
 public:
 	string name,
@@ -67,48 +67,106 @@ int current_program = 0;
 vector<PROGRAM_FILE> programs;
 
 //-------------------------------------------------
-//----------------DEFAULT PROGRAM - used to display errors------------------------------
+//----------------------------------------------
 
-struct DEFAULT_PROGRAM {
+struct BASE_OPENGL {
 private:
-	unsigned int vaos = -1;
-
-public:
+	//dafault program name
 	const string NAME = "DEFAULT_ROGRAM_MyFragmentsLoader";
 
-	void init()  {
+	enum VAO {V, VAOS_NUM};
+	unsigned int vaos[VAOS_NUM];
+
+	enum BUFFERS {B_VERTEX, UNIFORM, BUFFERS_NUM};
+	unsigned int buffers[BUFFERS_NUM];
+
+public:
+
+	//Binding point for uniform_buffer 'CommonUniform' ,shared among all fragments
+	const unsigned int uniform_binding_point = 1;
+
+	void createDefaultProgram()  {
 		try{
-			ShaderMap::createProgram(NAME , "resources/default/vertex_default.glsl", "resources/default/fragment_error.glsl");
-			programs.push_back({NAME, NULL, "", false});
+			ShaderMap::createProgram(NAME , "resources/default/vertex_default.glsl", "resources/default/fragment_default.glsl");
+			programs.push_back({NAME, "", "", false});
 		}catch (ShaderException &e) {
 			cerr<<"ERROR LOADING DEFAULT PROGRAM : "<<e.what()<<endl;
 			exit(-1);
 		}
-//
-//		glGenVertexArrays(1, vaos);
-//		glGenBuffers(BUFFERS_NUM, buffers);
-//
-//		const char* _img_bg = "resources/default/CompilerError.jpg";
-//
-//		glActiveTexture(GL_TEXTURE1);
-//		unsigned int sampler;
-//		glGenSamplers(1, &sampler);
-//		glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//		glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//		glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//		glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//		glBindTexture(GL_TEXTURE_2D, textures[T_TEXT]);
-//		glBindSampler(T_TEXT, sampler);
-//		glUniform1i(ShaderMap::getUniformLocation("char_texture"), T_TEXT);
 	}
 
-	void display()  {
-		ShaderMap::useProgram(NAME);
+	void initOpenGL()  {
+		LOG(DEBUG)<<"--------- Init openGl buffer loading -------------------\n";
 
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		ShaderMap::useProgram(programs[0].name);
+
+		glGenVertexArrays(VAOS_NUM, vaos);
+		glGenBuffers(BUFFERS_NUM, buffers);
+
+		glBindBuffer(GL_ARRAY_BUFFER, buffers[B_VERTEX]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*6, NULL, GL_STATIC_DRAW);
+		glm::vec4* v = (glm::vec4*)glMapBuffer(GL_ARRAY_BUFFER,GL_WRITE_ONLY);
+			//coordinate to draw a simple quad with triangle fan
+			*v++ = glm::vec4(-1.0f, -1.0f, 0.0f, 1.0f);
+			*v++ = glm::vec4( 1.0f, -1.0f, 0.0f, 1.0f);
+			*v++ = glm::vec4( 1.0f,  1.0f, 0.0f, 1.0f);
+			*v++ = glm::vec4(-1.0f,  1.0f, 0.0f, 1.0f);
+			//uv-coordinate are 4 vec2 but i use this pointer then 2 vec4
+			*v++ = glm::vec4( 0.0f,  0.0f, 1.0f, 0.0f);
+			*v   = glm::vec4( 1.0f,  1.0f, 0.0f, 1.0f);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		LOG(DEBUG)<<OpenGLerror::check("creation buffer vertex");
+
+		unsigned int vtx_loc = ShaderMap::getAttributeLocation("position");
+		glBindVertexArray(vaos[V]);
+		glBindBuffer(GL_ARRAY_BUFFER, buffers[B_VERTEX]);
+			glVertexAttribPointer(vtx_loc, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), reinterpret_cast<void*>(0));
+
+			glEnableVertexAttribArray(vtx_loc);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+
+		LOG(DEBUG)<<OpenGLerror::check("creation buffer VAO");
+
+		ShaderMap::bindingUniformBlocks("CommonUniform", uniform_binding_point);
+		glBindBufferBase(GL_UNIFORM_BUFFER, uniform_binding_point, buffers[UNIFORM]);
+
+		LOG(DEBUG)<<OpenGLerror::check("Binding uniform Buffer");
+
+		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
+			glBufferData(GL_UNIFORM_BUFFER, 20, NULL, GL_DYNAMIC_DRAW); // allocate 20 bytes of memory
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		LOG(DEBUG)<<OpenGLerror::check("CREAZIOEN GL_UNIFORM_BUFFER : ")<<endl;
+
+		//Creation textures
+		//TO DO
+
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LEQUAL);
+		glDepthRange(0.0, 1.0);
+		glDepthMask(true);
+		glClearDepth(1.0f);
+		glEnable(GL_LINE_SMOOTH);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glColorMask(true, true, true, true);
+		//	//glEnable(GL_BLEND);
+		//	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glBindVertexArray(vaos[V]);
 	}
 
-} _default_program;
+	void displayDefaultProgram()  {
+
+	}
+
+	void displayProgram(string name) {
+
+	}
+
+} _base_system;
 
 
 

@@ -8,7 +8,7 @@ layout (std140) uniform CommonUniform
 };
 
 //do not modify
-layout(location = 3) uniform sampler2D texture1;
+layout(location = 3) uniform sampler2D texture_img;
 
 out vec4 color;
 
