@@ -21,7 +21,8 @@ namespace fs = std::filesystem;
 //----------------------------------------------------------------
 //-----INPUT PARAMETERS
 fs::path vertex_shader_file = "resources/default/vertex_default.glsl",//default value
-		fragments_folder = "";
+		 fragments_folder   = "",
+		 textures_folder    = "";
 bool recursive = false;
 
 bool file_order (string a, string b) {
@@ -79,6 +80,10 @@ private:
 
 	enum BUFFERS {B_VERTEX, UNIFORM, BUFFERS_NUM};
 	unsigned int buffers[BUFFERS_NUM];
+
+	enum TEXTURES {T_NULL = 0, T_1, T_2, T_3, T_4, TEXTURES_NUM};
+	unsigned int textures[TEXTURES_NUM];
+
 
 public:
 
@@ -142,7 +147,7 @@ public:
 		LOG(DEBUG)<<OpenGLerror::check("CREAZIOEN GL_UNIFORM_BUFFER : ")<<endl;
 
 		//Creation textures
-		//TO DO
+		glGenTextures(TEXTURES_NUM, textures);
 
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LEQUAL);

@@ -17,7 +17,7 @@ INITIALIZE_EASYLOGGINGPP
 
 void usage()  {
 	cout<<"USAGE: MyFragmentsLoader -f <fragment_shaders_folder> \n"
-			//"\t -f   : folder where are located all fragment shaders \n" - TO DO
+			"\t -f   : folder where are located all fragment shaders \n"
 			"\t -t   : (optional) folder of texture images. ('will be loaded max 4 in alphabetically order')\n"
 			"\t -r   : (optional) set recursive search in subfolder of fragment folder \n"
 			"\t -v   : (optional) your vertex shader file that will be common to all fragments. ('overwrite the default') \n";
