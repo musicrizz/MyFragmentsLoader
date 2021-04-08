@@ -18,8 +18,8 @@ INITIALIZE_EASYLOGGINGPP
 void usage()  {
 	cout<<"USAGE: MyFragmentsLoader -f <fragment_shaders_folder> \n"
 			"\t -f   : folder where are located all fragment shaders \n"
-			"\t -t   : (optional) folder of texture images. ('will be loaded max 4 in alphabetically order')\n"
 			"\t -r   : (optional) set recursive search in subfolder of fragment folder \n"
+			"\t -t   : (optional) folder of texture images. ('will be loaded max 5 in alphabetically order' - no recursive)\n"
 			"\t -v   : (optional) your vertex shader file that will be common to all fragments. ('overwrite the default') \n";
 }
 
@@ -29,9 +29,6 @@ void mouseCallback(GLFWwindow* window, double y, double x);
 void updateViewPort();
 void updateTime();
 
-int viewport_w, viewport_h;
-float viewport_aspect;
-
 static const char *CONTEXT="CONTEX_BASE",
 				  *FPS_TIME="FPS_TIME";
 
@@ -39,7 +36,7 @@ bool flag_update_viewport=true;
 
 int main(int argc, char **argv) {
 
-	if(argc > 6 || argc < 3)  {
+	if(argc > 8 || argc < 3)  {
 		usage();
 		return -1;
 	}
@@ -53,12 +50,17 @@ int main(int argc, char **argv) {
 	cout<<"argc : "<<argc<<endl;
 	for(int i = 1; i < argc; i++) {
 		if(strcmp(argv[i], "-f") == 0 && !setFragmentFolder(argv[i+1])) {
-			cerr<<"ERROR : "<<argv[i+1]<<" is not a valid folder"<<endl;
+			cerr<<"ERROR : "<<argv[i+1]<<" is not a valid fragments folder"<<endl;
+			usage();
+			return -1;
+		}
+		if(strcmp(argv[i], "-t") == 0 && !setTextureFolder(argv[i+1])) {
+			cerr<<"ERROR : "<<argv[i+1]<<" is not a valid textures folder"<<endl;
 			usage();
 			return -1;
 		}
 		if(strcmp(argv[i], "-v") == 0 && !setVertexFile(argv[i+1])) {
-			cerr<<"ERROR : "<<argv[i+1]<<" is not a valid file"<<endl;
+			cerr<<"ERROR : "<<argv[i+1]<<" is not a valid vertex file"<<endl;
 			usage();
 			return -1;
 		}
@@ -119,6 +121,7 @@ int main(int argc, char **argv) {
 		viewport_aspect = float(height) / float(width);
 		flag_update_viewport = true;
 	});
+
 	OpenGLContext::setMouseCursorPos(mouseCallback);
 	OpenGLContext::setKeyboard(keyboard);
 
@@ -128,11 +131,11 @@ int main(int argc, char **argv) {
 	_base_system.createDefaultProgram();
 
 	//Create a program for each file
-	string name;
 	for(const auto &f : fragments_map)  {
+		string name = f.first.substr(f.first.find_last_of("/\\")+1);
+		LOG(DEBUG)<<"File to load : "<<name<<endl;
+
 		try{
-			name = f.first.substr(f.first.find_last_of("/\\")+1);
-			LOG(DEBUG)<<"File to load : "<<name<<endl;
 			ShaderMap::createProgram( name , vertex_shader_file.c_str(), f.first.c_str());
 			//set Binding point for uniform_buffer
 			ShaderMap::getProgram(name)->setBindingPoint(_base_system.uniform_binding_point);
@@ -204,25 +207,17 @@ int main(int argc, char **argv) {
 
 void updateViewPort() {
 	if (flag_update_viewport) {
-		glViewport(0, 0, viewport_w, viewport_h);
-		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
-			glBufferSubData(GL_UNIFORM_BUFFER, 0, 8, glm::value_ptr(glm::ivec2(viewport_w, viewport_h)));
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		_base_system.updateViewPort();
 		flag_update_viewport = false;
 	}
 }
 
 void updateTime()   {
-	float time = float(glfwGetTime());
-	glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
-		glBufferSubData(GL_UNIFORM_BUFFER, 16, 4, reinterpret_cast<void*>(&time) );
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	_base_system.updateTime();
 }
 
 void mouseCallback(GLFWwindow* window, double x, double y)  {
-	glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
-		glBufferSubData(GL_UNIFORM_BUFFER, 8, 8, glm::value_ptr(glm::vec2(float(x)/float(viewport_w), float(viewport_h-y)/float(viewport_h))));
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	_base_system.updateMouse(x,y);
 }
 
 void keyboard(GLFWwindow* window, int key, int scancose, int action, int mods)  {

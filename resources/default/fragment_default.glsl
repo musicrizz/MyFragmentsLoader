@@ -7,8 +7,8 @@ layout (std140) uniform CommonUniform
 	float time;     //  4      16  
 };
 
-//do not modify
-layout(location = 3) uniform sampler2D texture_img;
+//do not modify - sampler at 0 is NULL
+layout(location = 3) uniform sampler2D texture_img[5];
 
 out vec4 color;
 

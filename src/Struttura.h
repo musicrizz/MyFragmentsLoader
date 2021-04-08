@@ -15,6 +15,8 @@
 #include <iomanip>
 #include <string>
 
+#include "../third_party_lib/image/stb_image.h"
+
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -23,7 +25,8 @@ namespace fs = std::filesystem;
 fs::path vertex_shader_file = "resources/default/vertex_default.glsl",//default value
 		 fragments_folder   = "",
 		 textures_folder    = "";
-bool recursive = false;
+bool recursive = false,
+	 flag_load_Texture = false;
 
 bool file_order (string a, string b) {
 	return a.substr(a.find_last_of("/\\")+1) < (b.substr(b.find_last_of("/\\")+1));
@@ -39,6 +42,15 @@ bool setVertexFile(char* v) {
 bool setFragmentFolder(char* v) {
 	fragments_folder = v;
 	return fs::is_directory(fragments_folder);
+}
+
+bool setTextureFolder(char* v) {
+	textures_folder = v;
+	if(fs::is_directory(textures_folder)) {
+		flag_load_Texture = true;
+		return true;
+	}
+	return false;
 }
 
 void loadFragmentFiles(fs::path dir)  {
@@ -70,6 +82,9 @@ vector<PROGRAM_FILE> programs;
 //-------------------------------------------------
 //----------------------------------------------
 
+int viewport_w, viewport_h;
+float viewport_aspect;
+
 struct BASE_OPENGL {
 private:
 	//dafault program name
@@ -81,9 +96,8 @@ private:
 	enum BUFFERS {B_VERTEX, UNIFORM, BUFFERS_NUM};
 	unsigned int buffers[BUFFERS_NUM];
 
-	enum TEXTURES {T_NULL = 0, T_1, T_2, T_3, T_4, TEXTURES_NUM};
+	enum TEXTURES {T_NULL = 0, T_1, T_2, T_3, T_4, T_5, T_DEFAULT, TEXTURES_NUM};
 	unsigned int textures[TEXTURES_NUM];
-
 
 public:
 
@@ -92,6 +106,7 @@ public:
 
 	void createDefaultProgram()  {
 		try{
+			//this default program is used for display error
 			ShaderMap::createProgram(NAME , "resources/default/vertex_default.glsl", "resources/default/fragment_default.glsl");
 			programs.push_back({NAME, "", "", false});
 		}catch (ShaderException &e) {
@@ -149,6 +164,40 @@ public:
 		//Creation textures
 		glGenTextures(TEXTURES_NUM, textures);
 
+		unsigned int sampler;
+		glGenSamplers(1, &sampler);
+		glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		stbi_set_flip_vertically_on_load(true);
+		const char* img = "resources/default/CompilerError.jpg";
+		int w, h, nrChannels;
+		unsigned char *data = stbi_load(img, &w, &h, &nrChannels, 0);
+		if(!data) {
+			LOG(DEBUG)<<"ERROR LOAD DEFAULT TEXTURE";
+			exit(-1);
+		}
+		unsigned int img_size = sizeof(unsigned char) * w * h * nrChannels;
+		LOG(DEBUG)<<"Image\n w: "<<w<<"\n h: "<<h<<"\n ch: "<<nrChannels<<"\n size: "<<img_size<<std::endl;
+
+		GLenum internalFormat, format;
+		switch(nrChannels)  {
+			case 1: internalFormat = GL_R8; format = GL_RED;break;
+			case 3: internalFormat = GL_RGB32F; format = GL_RGB;break;
+			case 4: internalFormat = GL_RGBA32F; format = GL_RGBA;break;
+			default: //TODO
+		}
+
+		int lev = mipmapsLevels(w, h, 16);
+
+		stbi_image_free(data);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, T_NULL);
+
+
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LEQUAL);
 		glDepthRange(0.0, 1.0);
@@ -169,6 +218,26 @@ public:
 
 	void displayProgram(string name) {
 
+	}
+
+	void updateViewPort() {
+		glViewport(0, 0, viewport_w, viewport_h);
+		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
+			glBufferSubData(GL_UNIFORM_BUFFER, 0, 8, glm::value_ptr(glm::ivec2(viewport_w, viewport_h)));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+
+	void updateTime()  {
+		float time = float(glfwGetTime());
+		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
+			glBufferSubData(GL_UNIFORM_BUFFER, 16, 4, reinterpret_cast<void*>(&time) );
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+
+	void updateMouse(double x, double y)  {
+		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
+			glBufferSubData(GL_UNIFORM_BUFFER, 8, 8, glm::value_ptr(glm::vec2(float(x)/float(viewport_w), float(viewport_h-y)/float(viewport_h))));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
 } _base_system;
