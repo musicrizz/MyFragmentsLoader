@@ -11,9 +11,10 @@
 #include "../context_util/util.h"
 #include <filesystem>
 #include <map>
-#include <vector>
+#include <set>
 #include <iomanip>
 #include <string>
+#include <utility>
 
 #include "../third_party_lib/image/stb_image.h"
 
@@ -34,6 +35,8 @@ bool file_order (string a, string b) {
 bool(*file_order_pt)(string,string) = file_order;
 map<string, fs::file_time_type, bool(*)(string,string)> fragments_map (file_order_pt);
 
+set<string> texture_files;
+
 bool setVertexFile(char* v) {
 	vertex_shader_file = v;
 	return fs::is_regular_file(vertex_shader_file);
@@ -53,6 +56,7 @@ bool setTextureFolder(char* v) {
 	return false;
 }
 
+//TODO - add check file extension
 void loadFragmentFiles(fs::path dir)  {
 	for (const auto &f : fs::directory_iterator(dir)) {
 		if (f.is_regular_file()) {
@@ -61,6 +65,29 @@ void loadFragmentFiles(fs::path dir)  {
 			loadFragmentFiles(f);
 		}
 	}
+}
+
+//TODO - add check file extension
+void loadTextureFiles(fs::path dir)  {
+	for (const auto &f : fs::directory_iterator(dir)) {
+		if (f.is_regular_file()) {
+			texture_files.insert(f.path().string());
+		}
+	}
+}
+
+pair<GLenum,GLenum> getFormat(int nrChannels)  {
+	GLenum internalFormat, format;
+	switch(nrChannels)  {
+		case 1: internalFormat = GL_R8; format = GL_RED;break;
+		case 3: internalFormat = GL_RGB32F; format = GL_RGB;break;
+		case 4: internalFormat = GL_RGBA32F; format = GL_RGBA;break;
+		default: {
+			LOG(ERROR)<<"Not supported image";
+			return pair<GLenum,GLenum> (0, 0);
+		}//TODO
+	}
+	return pair<GLenum,GLenum> (internalFormat, format);
 }
 
 //-----------------------------------------------------------
@@ -88,7 +115,11 @@ float viewport_aspect;
 struct BASE_OPENGL {
 private:
 	//dafault program name
-	const string NAME = "DEFAULT_ROGRAM_MyFragmentsLoader";
+	const string DEFAULT_PGR_NAME = "DEFAULT_ROGRAM_MyFragmentsLoader";
+
+	const char* DEFAULT_VERTEX_SHADER = "resources/default/vertex_default.glsl";
+	const char* DEFAULT_FRAGMT_SHADER = "resources/default/fragment_default.glsl";
+	const char* DEFAULT_TEXTURE_IMG = "resources/default/CompilerError.jpg";
 
 	enum VAO {V, VAOS_NUM};
 	unsigned int vaos[VAOS_NUM];
@@ -96,8 +127,17 @@ private:
 	enum BUFFERS {B_VERTEX, UNIFORM, BUFFERS_NUM};
 	unsigned int buffers[BUFFERS_NUM];
 
-	enum TEXTURES {T_NULL = 0, T_1, T_2, T_3, T_4, T_5, T_DEFAULT, TEXTURES_NUM};
-	unsigned int textures[TEXTURES_NUM];
+	unsigned int texture_array_loc;
+
+	unsigned int* textures;
+
+	void activeTextureUnits()  {
+		for(int i = 0; i < texture_files.size(); i++)  {
+			glActiveTexture(GL_TEXTURE1+i);
+				glBindTexture(GL_TEXTURE_2D, textures[i]);
+			glUniform1i(texture_array_loc+i, i+1);
+		}
+	}
 
 public:
 
@@ -107,16 +147,17 @@ public:
 	void createDefaultProgram()  {
 		try{
 			//this default program is used for display error
-			ShaderMap::createProgram(NAME , "resources/default/vertex_default.glsl", "resources/default/fragment_default.glsl");
-			programs.push_back({NAME, "", "", false});
+			ShaderMap::createProgram(DEFAULT_PGR_NAME , DEFAULT_VERTEX_SHADER, DEFAULT_FRAGMT_SHADER);
+			programs.push_back({DEFAULT_PGR_NAME, "", "", false});
 		}catch (ShaderException &e) {
 			cerr<<"ERROR LOADING DEFAULT PROGRAM : "<<e.what()<<endl;
 			exit(-1);
 		}
+
 	}
 
-	void initOpenGL()  {
-		LOG(DEBUG)<<"--------- Init openGl buffer loading -------------------\n";
+	void initOpenGLBuffers()  {
+		LOG(DEBUG)<<"--------- Init openGl buffers and loading textures-------------------\n";
 
 		ShaderMap::useProgram(programs[0].name);
 
@@ -140,63 +181,103 @@ public:
 		LOG(DEBUG)<<OpenGLerror::check("creation buffer vertex");
 
 		unsigned int vtx_loc = ShaderMap::getAttributeLocation("position");
+		unsigned int uv_loc  = ShaderMap::getAttributeLocation("uv_coord");
+		LOG(DEBUG)<<"GLSL var location -> verteex : "<<vtx_loc<<", uv: "<<uv_loc;
+
 		glBindVertexArray(vaos[V]);
 		glBindBuffer(GL_ARRAY_BUFFER, buffers[B_VERTEX]);
 			glVertexAttribPointer(vtx_loc, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), reinterpret_cast<void*>(0));
-
+			glVertexAttribPointer(uv_loc,  2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), reinterpret_cast<void*>(sizeof(glm::vec4)*4));
 			glEnableVertexAttribArray(vtx_loc);
+			glEnableVertexAttribArray(uv_loc);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
-
 		LOG(DEBUG)<<OpenGLerror::check("creation buffer VAO");
 
 		ShaderMap::bindingUniformBlocks("CommonUniform", uniform_binding_point);
 		glBindBufferBase(GL_UNIFORM_BUFFER, uniform_binding_point, buffers[UNIFORM]);
-
 		LOG(DEBUG)<<OpenGLerror::check("Binding uniform Buffer");
 
 		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
 			glBufferData(GL_UNIFORM_BUFFER, 20, NULL, GL_DYNAMIC_DRAW); // allocate 20 bytes of memory
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
 		LOG(DEBUG)<<OpenGLerror::check("CREAZIOEN GL_UNIFORM_BUFFER : ")<<endl;
 
 		//Creation textures
-		glGenTextures(TEXTURES_NUM, textures);
+		if(flag_load_Texture)  {
+			LOG(DEBUG)<<"LOAD TEXTURES FILES PATH";
+			loadTextureFiles(textures_folder);
+		}
 
-		unsigned int sampler;
-		glGenSamplers(1, &sampler);
-		glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		textures = new unsigned int[texture_files.size()+1];
+		glGenTextures(texture_files.size()+1, textures);
+
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);//if not set the image that are not multiple of 2 will crash the application
 
 		stbi_set_flip_vertically_on_load(true);
-		const char* img = "resources/default/CompilerError.jpg";
+
+		//First load default texture for base program
 		int w, h, nrChannels;
-		unsigned char *data = stbi_load(img, &w, &h, &nrChannels, 0);
+		unsigned char *data = stbi_load(DEFAULT_TEXTURE_IMG, &w, &h, &nrChannels, 0);
 		if(!data) {
-			LOG(DEBUG)<<"ERROR LOAD DEFAULT TEXTURE";
+			LOG(ERROR)<<"ERROR LOAD DEFAULT TEXTURE";
 			exit(-1);
 		}
 		unsigned int img_size = sizeof(unsigned char) * w * h * nrChannels;
-		LOG(DEBUG)<<"Image\n w: "<<w<<"\n h: "<<h<<"\n ch: "<<nrChannels<<"\n size: "<<img_size<<std::endl;
+		LOG(DEBUG)<<"Image default w: "<<w<<", h: "<<h<<", ch: "<<nrChannels<<", size: "<<img_size<<std::endl;
 
-		GLenum internalFormat, format;
-		switch(nrChannels)  {
-			case 1: internalFormat = GL_R8; format = GL_RED;break;
-			case 3: internalFormat = GL_RGB32F; format = GL_RGB;break;
-			case 4: internalFormat = GL_RGBA32F; format = GL_RGBA;break;
-			default: //TODO
-		}
+		texture_array_loc = ShaderMap::getUniformLocation("texture_img[0]");
+		LOG(DEBUG)<<"Texture location texture_img[0] : "<<texture_array_loc;
 
-		int lev = mipmapsLevels(w, h, 16);
+		pair<GLenum, GLenum> format = getFormat(nrChannels);
+		int lev = mipmapsLevels(w, h, 24);
+		glBindTexture(GL_TEXTURE_2D, textures[texture_files.size()]);
+		    glTexStorage2D(GL_TEXTURE_2D, lev, format.first, w, h);
+		    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, format.second, GL_UNSIGNED_BYTE, data);
+		    glGenerateMipmap(GL_TEXTURE_2D);
+		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, lev-1);
+		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		LOG(DEBUG)<<OpenGLerror::check("Creazione Default Texture")<<std::endl;
 
 		stbi_image_free(data);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, T_NULL);
+		//Load all texture in the vector texture_files
+		int index = 0;
+		for(auto &f : texture_files)  {
+			data = stbi_load(f.c_str(), &w, &h, &nrChannels, 0);
+			if(!data) {
+				LOG(DEBUG)<<"ERROR LOAD TEXTURE : "<<f;
+				index++;
+				continue;
+			}
+			img_size = sizeof(unsigned char) * w * h * nrChannels;
+			LOG(DEBUG)<<"Image "<<f<<", w: "<<w<<", h: "<<h<<", ch: "<<nrChannels<<", size: "<<img_size<<std::endl;
+			format = getFormat(nrChannels);
+			lev = mipmapsLevels(w, h, 24);
+			glBindTexture(GL_TEXTURE_2D, textures[index++]);
+				glTexStorage2D(GL_TEXTURE_2D, lev, format.first, w, h);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, format.second, GL_UNSIGNED_BYTE, data);
+				glGenerateMipmap(GL_TEXTURE_2D);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, lev-1);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glBindTexture(GL_TEXTURE_2D, 0);
+			LOG(DEBUG)<<"TEXTURE: "<<f<<OpenGLerror::check(" Creazione Texture")<<std::endl;
+			stbi_image_free(data);
+		}
 
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glUniform1i(texture_array_loc, 0);
 
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LEQUAL);
@@ -213,10 +294,31 @@ public:
 	}
 
 	void displayDefaultProgram()  {
+		ShaderMap::useProgram(DEFAULT_PGR_NAME);
 
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textures[texture_files.size()]);
+		glUniform1i(texture_array_loc, 1);
+
+		updateViewPort();
+
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+		//ShaderMap::program_null();
 	}
 
 	void displayProgram(string name) {
+		ShaderMap::useProgram(name);
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		activeTextureUnits();
+
+		updateViewPort();
+		updateTime();
+
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	}
 

@@ -19,7 +19,7 @@ void usage()  {
 	cout<<"USAGE: MyFragmentsLoader -f <fragment_shaders_folder> \n"
 			"\t -f   : folder where are located all fragment shaders \n"
 			"\t -r   : (optional) set recursive search in subfolder of fragment folder \n"
-			"\t -t   : (optional) folder of texture images. ('will be loaded max 5 in alphabetically order' - no recursive)\n"
+			"\t -t   : (optional) folder of texture images. ('will be loaded in alphabetically order and ca be accessed in fragment with []' - no recursive in sub-forlder)\n"
 			"\t -v   : (optional) your vertex shader file that will be common to all fragments. ('overwrite the default') \n";
 }
 
@@ -72,10 +72,8 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	LOG(DEBUG)<<"Input parameter : "<<vertex_shader_file.c_str()<<" - "<<fragments_folder.c_str()<<endl;
-
 	if(fs::is_regular_file(vertex_shader_file))  {
-		LOG(DEBUG)<<"OK default vertex is regular";
+		LOG(DEBUG)<<"OK vertex shader is regular files";
 	}else{
 		LOG(DEBUG)<<"Problem default vertex";
 		return 0;
@@ -130,7 +128,7 @@ int main(int argc, char **argv) {
 	//CREATE DEFAULT PROGRAM FOR DISPLAY COMPILATION ERROR in position 0
 	_base_system.createDefaultProgram();
 
-	//Create a program for each file
+	//Create a program for each fragment file
 	for(const auto &f : fragments_map)  {
 		string name = f.first.substr(f.first.find_last_of("/\\")+1);
 		LOG(DEBUG)<<"File to load : "<<name<<endl;
@@ -151,13 +149,13 @@ int main(int argc, char **argv) {
 		exit(-1);
 	}
 
-	current_program = 0;
+	current_program = 1;
 
 	for(auto p : programs)  {
 		LOG(DEBUG)<<"Struttura : "<<p.name<<" \n\t "<<p.path<<" \n\t "<<p.error<<" \n\t "<<p.error_status<<endl;
 	}
 
-	_base_system.initOpenGL();
+	_base_system.initOpenGLBuffers();
 
 	glfwGetFramebufferSize(OpenGLContext::getCurrent(), &viewport_w, &viewport_h);
 	viewport_aspect = float(viewport_h) / float(viewport_w);
@@ -166,26 +164,23 @@ int main(int argc, char **argv) {
 	glfwSwapInterval(1);
 
 	cout<<OpenGLerror::check("Finish setUp Opengl");
+	glfwSetWindowTitle(OpenGLContext::getCurrent(), programs[current_program].name.c_str());
 
 	while (!glfwWindowShouldClose(OpenGLContext::getCurrent())) {
 
 		if (TempoMap::getElapsedMill(FPS_TIME) >= 30) {
 
-			ShaderMap::useProgram(programs[current_program].name);
-
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			updateViewPort();
-
-			updateTime();
-
-			glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+			if(!programs[current_program].error_status)  {
+				_base_system.displayProgram(programs[current_program].name);
+			}else{
+				_base_system.displayDefaultProgram();
+			}
 
 			OpenGLContext::swapBuffers();
 
 			TempoMap::updateStart(FPS_TIME);
 
-			ShaderMap::program_null();
+
 		}
 
 		glfwPollEvents(); //  It MUST be in the main thread
@@ -233,8 +228,9 @@ void keyboard(GLFWwindow* window, int key, int scancose, int action, int mods)  
 			if(current_program < programs.size()-1)  {
 				current_program++;
 			}else{
-				current_program = 0;
+				current_program = 1;
 			}
+			glfwSetWindowTitle(window, programs[current_program].name.c_str());
 		}
 		break;
 	case GLFW_KEY_KP_SUBTRACT:
@@ -244,6 +240,7 @@ void keyboard(GLFWwindow* window, int key, int scancose, int action, int mods)  
 			}else{
 				current_program = programs.size()-1;
 			}
+			glfwSetWindowTitle(window, programs[current_program].name.c_str());
 		}
 		break;
 	}

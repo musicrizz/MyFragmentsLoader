@@ -14,9 +14,10 @@ layout (std140) uniform CommonUniform
 };
 //---
 
-//do not modify
+//do not modify the name and type of in variables
 layout(location = 2) in vec4 position;
 layout(location = 3) in vec2 uv_coord;
+
 out vec2 fs_uv_coord;
 //-----
 

@@ -1,5 +1,6 @@
 #version 430 core
 
+
 layout (std140) uniform CommonUniform
 {     		        //base  //Offset          
 	ivec2 viewport; //  8      0   
@@ -7,12 +8,16 @@ layout (std140) uniform CommonUniform
 	float time;     //  4      16  
 };
 
-//do not modify - sampler at 0 is NULL
-layout(location = 3) uniform sampler2D texture_img[5];
+//do not modify -
+uniform sampler2D texture_img[5];
+
+in vec2 fs_uv_coord;
 
 out vec4 color;
 
 
 void main(void)    {
-	color = vec4(1.0,0.0,0.0,1.0);
+	
+	color = texture(texture_img[0], fs_uv_coord);
+	
 }
