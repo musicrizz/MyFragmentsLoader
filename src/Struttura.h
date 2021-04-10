@@ -127,11 +127,13 @@ private:
 	enum BUFFERS {B_VERTEX, UNIFORM, BUFFERS_NUM};
 	unsigned int buffers[BUFFERS_NUM];
 
-	unsigned int texture_array_loc;
+	int texture_array_loc;
 
 	unsigned int* textures;
 
 	void activeTextureUnits()  {
+		int loc = ShaderMap::getUniformLocation("texture_img[0]");
+		if(loc<0) return;
 		for(int i = 0; i < texture_files.size(); i++)  {
 			glActiveTexture(GL_TEXTURE1+i);
 				glBindTexture(GL_TEXTURE_2D, textures[i]);
@@ -180,8 +182,8 @@ public:
 
 		LOG(DEBUG)<<OpenGLerror::check("creation buffer vertex");
 
-		unsigned int vtx_loc = ShaderMap::getAttributeLocation("position");
-		unsigned int uv_loc  = ShaderMap::getAttributeLocation("uv_coord");
+		int vtx_loc = ShaderMap::getAttributeLocation("position");
+		int uv_loc  = ShaderMap::getAttributeLocation("uv_coord");
 		LOG(DEBUG)<<"GLSL var location -> verteex : "<<vtx_loc<<", uv: "<<uv_loc;
 
 		glBindVertexArray(vaos[V]);
@@ -228,6 +230,7 @@ public:
 
 		texture_array_loc = ShaderMap::getUniformLocation("texture_img[0]");
 		LOG(DEBUG)<<"Texture location texture_img[0] : "<<texture_array_loc;
+		LOG(DEBUG)<<"TEST : "<<ShaderMap::getUniformLocation("texture_img[55]");
 
 		pair<GLenum, GLenum> format = getFormat(nrChannels);
 		int lev = mipmapsLevels(w, h, 24);
@@ -274,7 +277,6 @@ public:
 			stbi_image_free(data);
 		}
 
-
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glUniform1i(texture_array_loc, 0);
@@ -287,16 +289,14 @@ public:
 		glEnable(GL_LINE_SMOOTH);
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glColorMask(true, true, true, true);
-		//	//glEnable(GL_BLEND);
-		//	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//glEnable(GL_BLEND);
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		glBindVertexArray(vaos[V]);
 	}
 
 	void displayDefaultProgram()  {
 		ShaderMap::useProgram(DEFAULT_PGR_NAME);
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, textures[texture_files.size()]);
@@ -310,8 +310,6 @@ public:
 
 	void displayProgram(string name) {
 		ShaderMap::useProgram(name);
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		activeTextureUnits();
 

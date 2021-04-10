@@ -170,6 +170,8 @@ int main(int argc, char **argv) {
 
 		if (TempoMap::getElapsedMill(FPS_TIME) >= 30) {
 
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 			if(!programs[current_program].error_status)  {
 				_base_system.displayProgram(programs[current_program].name);
 			}else{
