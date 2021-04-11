@@ -43,9 +43,21 @@ bool ShaderMap::createProgram(std::string name, const char *vertexPath, const ch
 	return false;
 }
 
+bool ShaderMap::deleteProgram(std::string name)   {
+	Program* pgr = getProgram(name);
+	if(pgr != nullptr) {
+		glUseProgram(0);
+		glDeleteProgram(pgr->getID());
+		map.erase(name);
+		delete pgr;
+		return true;
+	}
+	return false;
+}
+
 void ShaderMap::useProgram(std::string name)  {
 	Program* pgr = getProgram(name);
-	if(pgr->getID() > 0) {
+	if(pgr != nullptr  && pgr->getID() > 0) {
 		glUseProgram(pgr->getID());
 		current = pgr;
 	}
@@ -54,7 +66,7 @@ void ShaderMap::useProgram(std::string name)  {
 Program* ShaderMap::getProgram(std::string name)  {
 	try {
 		return map.at(name);
-	} catch (const std::out_of_range &oor) {}
+	} catch (...) {}
 	return nullptr;
 }
 

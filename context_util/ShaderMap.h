@@ -34,6 +34,7 @@ public:
 	virtual ~ShaderMap();
 
 	static bool createProgram(std::string name, const char* vertexPath, const char* fragmentPath);
+	static bool deleteProgram(std::string name);
 
 	static void useProgram(std::string name);
 	static void program_null();//set glUseProgram to 0;

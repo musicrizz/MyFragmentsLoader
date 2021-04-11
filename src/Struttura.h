@@ -56,7 +56,6 @@ bool setTextureFolder(char* v) {
 	return false;
 }
 
-//TODO - add check file extension
 void loadFragmentFiles(fs::path dir)  {
 	for (const auto &f : fs::directory_iterator(dir)) {
 		if (f.is_regular_file()) {
@@ -67,7 +66,6 @@ void loadFragmentFiles(fs::path dir)  {
 	}
 }
 
-//TODO - add check file extension
 void loadTextureFiles(fs::path dir)  {
 	for (const auto &f : fs::directory_iterator(dir)) {
 		if (f.is_regular_file()) {
@@ -90,7 +88,7 @@ pair<GLenum,GLenum> getFormat(int nrChannels)  {
 	return pair<GLenum,GLenum> (internalFormat, format);
 }
 
-//-----------------------------------------------------------
+//--------------------------------------------------------------
 //-----------PROGRAMS FILES-------------------------------------------------
 
 //represent a program files loaded or not
@@ -100,11 +98,35 @@ public:
 	string name,
 		   path,
 	       error;
-	bool error_status;
+	bool error_status = false,
+		 modified = false;
 };
 
 int current_program = 0;
-vector<PROGRAM_FILE> programs;
+map<int,PROGRAM_FILE> programs;
+
+void checkFilesModified(fs::path dir)  {
+
+	for (const auto &f : fs::directory_iterator(dir)) {
+		if (f.is_regular_file()) {
+
+			try{
+				if(fragments_map.at(f.path().string()) != fs::last_write_time(f))  {
+
+				}
+			}catch (...) {}
+
+		}else if(recursive && f.is_directory()) {
+			checkFilesModified(f);
+		}
+	}
+
+	int pos = 1;
+	for(const auto &f : fragments_map)  {
+
+	}
+
+}
 
 //-------------------------------------------------
 //----------------------------------------------
@@ -121,23 +143,25 @@ private:
 	const char* DEFAULT_FRAGMT_SHADER = "resources/default/fragment_default.glsl";
 	const char* DEFAULT_TEXTURE_IMG = "resources/default/CompilerError.jpg";
 
+	int default_texture_array_loc;
+
+	unsigned int zoom_scroll = 1;
+
 	enum VAO {V, VAOS_NUM};
 	unsigned int vaos[VAOS_NUM];
 
 	enum BUFFERS {B_VERTEX, UNIFORM, BUFFERS_NUM};
 	unsigned int buffers[BUFFERS_NUM];
 
-	int texture_array_loc;
-
 	unsigned int* textures;
 
 	void activeTextureUnits()  {
 		int loc = ShaderMap::getUniformLocation("texture_img[0]");
 		if(loc<0) return;
-		for(int i = 0; i < texture_files.size(); i++)  {
+		for(int i = 0; i < (int)texture_files.size(); i++)  {
 			glActiveTexture(GL_TEXTURE1+i);
 				glBindTexture(GL_TEXTURE_2D, textures[i]);
-			glUniform1i(texture_array_loc+i, i+1);
+			glUniform1i(loc+i, i+1);
 		}
 	}
 
@@ -150,7 +174,7 @@ public:
 		try{
 			//this default program is used for display error
 			ShaderMap::createProgram(DEFAULT_PGR_NAME , DEFAULT_VERTEX_SHADER, DEFAULT_FRAGMT_SHADER);
-			programs.push_back({DEFAULT_PGR_NAME, "", "", false});
+			programs.insert( std::pair<int,PROGRAM_FILE>(0, {DEFAULT_PGR_NAME, "", "", false}) );
 		}catch (ShaderException &e) {
 			cerr<<"ERROR LOADING DEFAULT PROGRAM : "<<e.what()<<endl;
 			exit(-1);
@@ -201,7 +225,10 @@ public:
 		LOG(DEBUG)<<OpenGLerror::check("Binding uniform Buffer");
 
 		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
-			glBufferData(GL_UNIFORM_BUFFER, 20, NULL, GL_DYNAMIC_DRAW); // allocate 20 bytes of memory
+			glBufferData(GL_UNIFORM_BUFFER, 24, NULL, GL_DYNAMIC_DRAW); // allocate 20 bytes of memory
+			//init mouse pos e scroll
+			glBufferSubData(GL_UNIFORM_BUFFER, 8, 8, glm::value_ptr(glm::vec2(0.0f, 0.0f)));//mouse position init 0.0
+			glBufferSubData(GL_UNIFORM_BUFFER, 20, 4, reinterpret_cast<void*>(&zoom_scroll) );//zoom_scroll init to 1
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		LOG(DEBUG)<<OpenGLerror::check("CREAZIOEN GL_UNIFORM_BUFFER : ")<<endl;
 
@@ -228,9 +255,13 @@ public:
 		unsigned int img_size = sizeof(unsigned char) * w * h * nrChannels;
 		LOG(DEBUG)<<"Image default w: "<<w<<", h: "<<h<<", ch: "<<nrChannels<<", size: "<<img_size<<std::endl;
 
-		texture_array_loc = ShaderMap::getUniformLocation("texture_img[0]");
-		LOG(DEBUG)<<"Texture location texture_img[0] : "<<texture_array_loc;
-		LOG(DEBUG)<<"TEST : "<<ShaderMap::getUniformLocation("texture_img[55]");
+		default_texture_array_loc = ShaderMap::getUniformLocation("texture_img[0]");
+		LOG(DEBUG)<<"Texture location texture_img[0] : "<<default_texture_array_loc;
+
+		if(default_texture_array_loc < 0)  {
+			cerr<<"BAD DEFAULT FRAGMENT SHADERS texture_img[0] not valid location \n";
+			exit(-1);
+		}
 
 		pair<GLenum, GLenum> format = getFormat(nrChannels);
 		int lev = mipmapsLevels(w, h, 24);
@@ -279,7 +310,7 @@ public:
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, 0);
-		glUniform1i(texture_array_loc, 0);
+		glUniform1i(default_texture_array_loc, 0);
 
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LEQUAL);
@@ -300,7 +331,7 @@ public:
 
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, textures[texture_files.size()]);
-		glUniform1i(texture_array_loc, 1);
+		glUniform1i(default_texture_array_loc, 1);
 
 		updateViewPort();
 
@@ -327,6 +358,12 @@ public:
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
+	void updateMousePosition(double x, double y)  {
+		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
+			glBufferSubData(GL_UNIFORM_BUFFER, 8, 8, glm::value_ptr(glm::vec2(float(x)/float(viewport_w), float(viewport_h-y)/float(viewport_h))));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+
 	void updateTime()  {
 		float time = float(glfwGetTime());
 		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
@@ -334,9 +371,11 @@ public:
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
-	void updateMouse(double x, double y)  {
+	void updateMouseScroll(double x, double y)  {
+		zoom_scroll += float(y);
+		zoom_scroll < 1 ? zoom_scroll = 1 : 0;
 		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
-			glBufferSubData(GL_UNIFORM_BUFFER, 8, 8, glm::value_ptr(glm::vec2(float(x)/float(viewport_w), float(viewport_h-y)/float(viewport_h))));
+			glBufferSubData(GL_UNIFORM_BUFFER, 20, 4, reinterpret_cast<void*>(&zoom_scroll) );
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 

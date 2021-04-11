@@ -1,14 +1,24 @@
 #version 430 core
 
-// http://www.pouet.net/prod.php?which=57245
-// If you intend to reuse this shader, please add credits to 'Danilo Guanabara'
+//use this file as template
 
+//do not modify - binding_point 1 in the cpp code
 layout (std140) uniform CommonUniform
 {     		        //base  //Offset          
 	ivec2 viewport; //  8      0   
 	vec2 mouse;     //  8      8
 	float time;     //  4      16  
+	int zoom;     //  4      20 
 };
+
+//do not modify the name and type of this variables
+//------------------------------------
+//you can change the number of texture_img according to the images in the texture folder 
+uniform sampler2D texture_img[5];
+
+in vec2 fs_uv_coord;
+//------------------------------------
+
 
 #define PI 3.14159265359
 

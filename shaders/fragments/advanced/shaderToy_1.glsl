@@ -1,20 +1,24 @@
 #version 430 core
 
-/*
- * I believe that the code is clear enough, so I will save comments :)
- * But if you need help to understand anything, just tell me.
- * This shader is free to use as long it is distributed with credits.
- * And, yeah, you can change it.
- *
- * Author: Danguafer/Silexars
- */
+//use this file as template
 
+//do not modify - binding_point 1 in the cpp code
 layout (std140) uniform CommonUniform
 {     		        //base  //Offset          
 	ivec2 viewport; //  8      0   
 	vec2 mouse;     //  8      8
 	float time;     //  4      16  
+	int zoom;     //  4      20 
 };
+
+//do not modify the name and type of this variables
+//------------------------------------
+//you can change the number of texture_img according to the images in the texture folder 
+uniform sampler2D texture_img[5];
+
+in vec2 fs_uv_coord;
+//------------------------------------
+
 
 #define PI 3.14159265359
 

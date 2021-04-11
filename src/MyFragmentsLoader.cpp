@@ -24,10 +24,6 @@ void usage()  {
 }
 
 void keyboard(GLFWwindow* window, int key, int scancose, int action, int mods);
-void mouseCallback(GLFWwindow* window, double y, double x);
-
-void updateViewPort();
-void updateTime();
 
 static const char *CONTEXT="CONTEX_BASE",
 				  *FPS_TIME="FPS_TIME";
@@ -120,7 +116,14 @@ int main(int argc, char **argv) {
 		flag_update_viewport = true;
 	});
 
-	OpenGLContext::setMouseCursorPos(mouseCallback);
+	OpenGLContext::setMouseCursorPos([](GLFWwindow* window, double x, double y){
+		_base_system.updateMousePosition(x,y);
+	});
+
+	OpenGLContext::setMouseScroll([](GLFWwindow* window, double x, double y){
+		_base_system.updateMouseScroll(x, y);
+	});
+
 	OpenGLContext::setKeyboard(keyboard);
 
 	loadFragmentFiles(fragments_folder);
@@ -129,6 +132,7 @@ int main(int argc, char **argv) {
 	_base_system.createDefaultProgram();
 
 	//Create a program for each fragment file
+	current_program = 1;
 	for(const auto &f : fragments_map)  {
 		string name = f.first.substr(f.first.find_last_of("/\\")+1);
 		LOG(DEBUG)<<"File to load : "<<name<<endl;
@@ -137,10 +141,10 @@ int main(int argc, char **argv) {
 			ShaderMap::createProgram( name , vertex_shader_file.c_str(), f.first.c_str());
 			//set Binding point for uniform_buffer
 			ShaderMap::getProgram(name)->setBindingPoint(_base_system.uniform_binding_point);
-			programs.push_back({name, f.first, "", false});
+			programs.insert( std::pair<int,PROGRAM_FILE>(current_program++, {name, f.first, "", false,false}) );
 		}catch (ShaderException &e) {
 			LOG(DEBUG)<<"Error program creation : "<< f.first << " :" <<e.what()<<endl;
-			programs.push_back({name, f.first, string(e.what()), true});
+			programs.insert( std::pair<int,PROGRAM_FILE>(current_program++, {name, f.first, string(e.what()), true, false}) );
 		}
 	}
 
@@ -151,9 +155,11 @@ int main(int argc, char **argv) {
 
 	current_program = 1;
 
+#if DEVELOPEMENT
 	for(auto p : programs)  {
-		LOG(DEBUG)<<"Struttura : "<<p.name<<" \n\t "<<p.path<<" \n\t "<<p.error<<" \n\t "<<p.error_status<<endl;
+		LOG(DEBUG)<<"Struttura : "<<p.second.name<<" \n\t "<<p.second.path<<" \n\t "<<p.second.error<<" \n\t "<<p.second.error_status<<endl;
 	}
+#endif
 
 	_base_system.initOpenGLBuffers();
 
@@ -163,12 +169,30 @@ int main(int argc, char **argv) {
 
 	glfwSwapInterval(1);
 
-	cout<<OpenGLerror::check("Finish setUp Opengl");
 	glfwSetWindowTitle(OpenGLContext::getCurrent(), programs[current_program].name.c_str());
 
 	while (!glfwWindowShouldClose(OpenGLContext::getCurrent())) {
 
-		if (TempoMap::getElapsedMill(FPS_TIME) >= 30) {
+		if (TempoMap::getElapsedMill(FPS_TIME) >= 20) {
+
+			if(programs[current_program].modified)  {
+				try{
+					LOG(DEBUG)<<"Program "<<programs[current_program].name <<" IS MODIFIED !";
+					programs[current_program].modified = false;
+//					ShaderMap::deleteProgram(programs[current_program].name);
+//					ShaderMap::createProgram(programs[current_program].name, vertex_shader_file.c_str(), programs[current_program].path.c_str());
+//					ShaderMap::getProgram(programs[current_program].name)->setBindingPoint(_base_system.uniform_binding_point);
+//					programs[current_program].error_status=false;
+//					programs[current_program].modified=false;
+//					programs[current_program].error="";
+
+				}catch (ShaderException &e) {
+//					LOG(DEBUG)<<"Error program Re-creation : "<< programs[current_program].name << " :" <<e.what()<<endl;
+//					programs[current_program].error_status=true;
+//					programs[current_program].modified=false;
+//					programs[current_program].error=e.what();
+				}
+			}
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -181,7 +205,6 @@ int main(int argc, char **argv) {
 			OpenGLContext::swapBuffers();
 
 			TempoMap::updateStart(FPS_TIME);
-
 
 		}
 
@@ -201,22 +224,6 @@ int main(int argc, char **argv) {
 
 }
 
-
-void updateViewPort() {
-	if (flag_update_viewport) {
-		_base_system.updateViewPort();
-		flag_update_viewport = false;
-	}
-}
-
-void updateTime()   {
-	_base_system.updateTime();
-}
-
-void mouseCallback(GLFWwindow* window, double x, double y)  {
-	_base_system.updateMouse(x,y);
-}
-
 void keyboard(GLFWwindow* window, int key, int scancose, int action, int mods)  {
 	switch (key) {
 	case GLFW_KEY_ESCAPE:
@@ -227,7 +234,7 @@ void keyboard(GLFWwindow* window, int key, int scancose, int action, int mods)  
 		break;
 	case GLFW_KEY_KP_ADD:
 		if (action == GLFW_PRESS) {
-			if(current_program < programs.size()-1)  {
+			if(current_program < (int)programs.size()-1)  {
 				current_program++;
 			}else{
 				current_program = 1;
