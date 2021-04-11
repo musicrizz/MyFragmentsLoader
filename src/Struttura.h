@@ -33,7 +33,9 @@ bool file_order (string a, string b) {
 	return a.substr(a.find_last_of("/\\")+1) < (b.substr(b.find_last_of("/\\")+1));
 }
 bool(*file_order_pt)(string,string) = file_order;
-map<string, fs::file_time_type, bool(*)(string,string)> fragments_map (file_order_pt);
+//This map have a key = file_name and a value of time of modified end bool flag for modification
+//Ordered per file_name
+map<string, std::pair<fs::file_time_type, bool>, bool(*)(string, string)> fragments_map (file_order_pt);
 
 set<string> texture_files;
 
@@ -59,7 +61,10 @@ bool setTextureFolder(char* v) {
 void loadFragmentFiles(fs::path dir)  {
 	for (const auto &f : fs::directory_iterator(dir)) {
 		if (f.is_regular_file()) {
-			fragments_map.insert( std::pair<string, fs::file_time_type>(f.path().string(),fs::last_write_time(f)) );
+			fragments_map.insert(
+				std::pair<string, std::pair<fs::file_time_type,bool> >
+				(f.path().string(), std::pair<fs::file_time_type, bool>(fs::last_write_time(f), false))
+			);
 		}else if(recursive && f.is_directory()) {
 			loadFragmentFiles(f);
 		}
@@ -111,8 +116,9 @@ void checkFilesModified(fs::path dir)  {
 		if (f.is_regular_file()) {
 
 			try{
-				if(fragments_map.at(f.path().string()) != fs::last_write_time(f))  {
-
+				if(fragments_map.at(f.path().string()).first != fs::last_write_time(f))  {
+					fragments_map.at(f.path().string()).second = true;
+					fragments_map.at(f.path().string()).first = fs::last_write_time(f);
 				}
 			}catch (...) {}
 
@@ -120,12 +126,17 @@ void checkFilesModified(fs::path dir)  {
 			checkFilesModified(f);
 		}
 	}
+}
 
+void updateModifiedFragment()  {
 	int pos = 1;
-	for(const auto &f : fragments_map)  {
-
+	for(auto& f : fragments_map)  {
+		if(f.second.second) {
+			programs[pos].modified=true;
+			f.second.second=false;
+		}
+		pos++;
 	}
-
 }
 
 //-------------------------------------------------
@@ -140,10 +151,14 @@ private:
 	const string DEFAULT_PGR_NAME = "DEFAULT_ROGRAM_MyFragmentsLoader";
 
 	const char* DEFAULT_VERTEX_SHADER = "resources/default/vertex_default.glsl";
-	const char* DEFAULT_FRAGMT_SHADER = "resources/default/fragment_default.glsl";
-	const char* DEFAULT_TEXTURE_IMG = "resources/default/CompilerError.jpg";
+	const char*	DEFAULT_FRAGMT_SHADER = "resources/default/fragment_default.glsl";
+	const char*DEFAULT_TEXTURE_IMG = "resources/default/CompilerError.jpg";
+
+	const string default_vertex_attrib_name = "position";
+	const string default_uv_coord_attrib_name = "uv_coord";
 
 	int default_texture_array_loc;
+	const string default_texture_name = "texture_img[0]";
 
 	unsigned int zoom_scroll = 1;
 
@@ -156,7 +171,7 @@ private:
 	unsigned int* textures;
 
 	void activeTextureUnits()  {
-		int loc = ShaderMap::getUniformLocation("texture_img[0]");
+		int loc = ShaderMap::getUniformLocation(default_texture_name);
 		if(loc<0) return;
 		for(int i = 0; i < (int)texture_files.size(); i++)  {
 			glActiveTexture(GL_TEXTURE1+i);
@@ -169,6 +184,7 @@ public:
 
 	//Binding point for uniform_buffer 'CommonUniform' ,shared among all fragments
 	const unsigned int uniform_binding_point = 1;
+	const string common_uniform_name = "CommonUniform";
 
 	void createDefaultProgram()  {
 		try{
@@ -206,8 +222,8 @@ public:
 
 		LOG(DEBUG)<<OpenGLerror::check("creation buffer vertex");
 
-		int vtx_loc = ShaderMap::getAttributeLocation("position");
-		int uv_loc  = ShaderMap::getAttributeLocation("uv_coord");
+		int vtx_loc = ShaderMap::getAttributeLocation(default_vertex_attrib_name);
+		int uv_loc  = ShaderMap::getAttributeLocation(default_uv_coord_attrib_name);
 		LOG(DEBUG)<<"GLSL var location -> verteex : "<<vtx_loc<<", uv: "<<uv_loc;
 
 		glBindVertexArray(vaos[V]);
@@ -220,7 +236,7 @@ public:
 		glBindVertexArray(0);
 		LOG(DEBUG)<<OpenGLerror::check("creation buffer VAO");
 
-		ShaderMap::bindingUniformBlocks("CommonUniform", uniform_binding_point);
+		ShaderMap::bindingUniformBlocks(common_uniform_name, uniform_binding_point);
 		glBindBufferBase(GL_UNIFORM_BUFFER, uniform_binding_point, buffers[UNIFORM]);
 		LOG(DEBUG)<<OpenGLerror::check("Binding uniform Buffer");
 
@@ -255,8 +271,8 @@ public:
 		unsigned int img_size = sizeof(unsigned char) * w * h * nrChannels;
 		LOG(DEBUG)<<"Image default w: "<<w<<", h: "<<h<<", ch: "<<nrChannels<<", size: "<<img_size<<std::endl;
 
-		default_texture_array_loc = ShaderMap::getUniformLocation("texture_img[0]");
-		LOG(DEBUG)<<"Texture location texture_img[0] : "<<default_texture_array_loc;
+		default_texture_array_loc = ShaderMap::getUniformLocation(default_texture_name);
+		LOG(DEBUG)<<"Texture location "<< default_texture_name<<" : "<<default_texture_array_loc;
 
 		if(default_texture_array_loc < 0)  {
 			cerr<<"BAD DEFAULT FRAGMENT SHADERS texture_img[0] not valid location \n";

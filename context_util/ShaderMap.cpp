@@ -128,6 +128,13 @@ void ShaderMap::bindingUniformBlocks(std::string var_name, unsigned int biding_p
 	}
 }
 
+void ShaderMap::bindingUniformBlocksForSingleProgram(std::string program, std::string var_name, unsigned int biding_point)   {
+	int id = getProgram(program)->getID();
+	if (id > 0) {
+		glUniformBlockBinding(id, getUniformBlockIndex(program, var_name), biding_point);
+	}
+}
+
 int ShaderMap::getAttributeLocation(std::string program, std::string var_name) {
 	int p = getProgram(program)->getID();
 	if (p > 0) {

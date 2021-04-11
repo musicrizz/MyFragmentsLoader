@@ -54,6 +54,7 @@ public:
 	static int getUniformBlockIndex(std::string var_name);
 
 	static void bindingUniformBlocks(std::string var_name, unsigned int biding_point);
+	static void bindingUniformBlocksForSingleProgram(std::string pname, std::string var_name, unsigned int biding_point);
 
 	static int getAttributeLocation(std::string program, std::string var_name);
 	static int getAttributeLocation(std::string var_name);

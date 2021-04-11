@@ -179,18 +179,20 @@ int main(int argc, char **argv) {
 				try{
 					LOG(DEBUG)<<"Program "<<programs[current_program].name <<" IS MODIFIED !";
 					programs[current_program].modified = false;
-//					ShaderMap::deleteProgram(programs[current_program].name);
-//					ShaderMap::createProgram(programs[current_program].name, vertex_shader_file.c_str(), programs[current_program].path.c_str());
-//					ShaderMap::getProgram(programs[current_program].name)->setBindingPoint(_base_system.uniform_binding_point);
-//					programs[current_program].error_status=false;
-//					programs[current_program].modified=false;
-//					programs[current_program].error="";
+					ShaderMap::deleteProgram(programs[current_program].name);
+					ShaderMap::createProgram(programs[current_program].name, vertex_shader_file.c_str(), programs[current_program].path.c_str());
+					ShaderMap::getProgram(programs[current_program].name)->setBindingPoint(_base_system.uniform_binding_point);
+					ShaderMap::bindingUniformBlocks(_base_system.common_uniform_name, _base_system.uniform_binding_point);
+					ShaderMap::bindingUniformBlocksForSingleProgram(programs[current_program].name, "CommonUniform", _base_system.uniform_binding_point);
+					programs[current_program].error_status=false;
+					programs[current_program].error="";
+					LOG(DEBUG)<<"Program "<<programs[current_program].name <<"SUCCESIFUL COMPILED :)";
 
 				}catch (ShaderException &e) {
-//					LOG(DEBUG)<<"Error program Re-creation : "<< programs[current_program].name << " :" <<e.what()<<endl;
-//					programs[current_program].error_status=true;
-//					programs[current_program].modified=false;
-//					programs[current_program].error=e.what();
+					LOG(DEBUG)<<"Error program Re-Compilation : "<< programs[current_program].name << " :" <<e.what()<<endl;
+					programs[current_program].error_status=true;
+					programs[current_program].modified=false;
+					programs[current_program].error=e.what();
 				}
 			}
 
@@ -211,6 +213,14 @@ int main(int argc, char **argv) {
 		glfwPollEvents(); //  It MUST be in the main thread
 
 		//this_thread::yield();
+
+		if (TempoMap::getElapsedSeconds("TEST") >= 1)  {
+			LOG(DEBUG)<<"CHECK IF FRAGMENTS ARE MODIFIED";
+			checkFilesModified(fragments_folder);
+			updateModifiedFragment();
+
+			TempoMap::updateStart("TEST");
+		}
 
 	}
 

@@ -33,7 +33,7 @@ void main() {
 	vec2 st = gl_FragCoord.xy/viewport;
 
     float y = pow(st.x,5.0);
-fghf
+
     vec3 tmp = vec3(y);
 
     float pct = plot(st,y);

@@ -34,7 +34,7 @@ void main() {
 	for (int i = 0; i < 3; i++) {
 		vec2 uv, p = gl_FragCoord.xy / r;
 		uv = p;
-		p -= .5;
+		p -= 0.5;
 		p.x *= r.x / r.y;
 		z += .07;
 		l = length(p);
