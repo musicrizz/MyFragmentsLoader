@@ -37,7 +37,7 @@ void main() {
     vec3 tmp = vec3(y);
 
     float pct = plot(st,y);
-    tmp = (1.0-pct) * tmp + pct * vec3(0.0,1.0,0.0);
+    tmp = (1.0-pct) * tmp + pct * vec3(1.0,1.0,0.0);
 
     color = vec4(tmp,1.0);
     

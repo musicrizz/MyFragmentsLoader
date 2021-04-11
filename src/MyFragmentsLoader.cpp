@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 	}
 
 	START_EASYLOGGINGPP(argc, argv);
-	el::Configurations log_conf("conf/logger.conf");
+	el::Configurations log_conf("config/logger.conf");
 	el::Loggers::reconfigureLogger("default", log_conf);
 	el::Loggers::reconfigureAllLoggers(log_conf);
 
