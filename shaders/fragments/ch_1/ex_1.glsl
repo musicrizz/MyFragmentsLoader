@@ -33,16 +33,17 @@ void main(void)    {
 	if( (st.x > (mouse.x-0.01) && st.x < (mouse.x+0.01) )
 		&&
 		(st.y > (mouse.y-0.01) && st.y < (mouse.y+0.01) ) ) {
-		color = vec4(1.0,0.0,0.0,1.0);
+		color = vec4(0.0,1.0,0.0,1.0);
 	}else{
 		//color = vec4(0.0, 0.0, abs(cos(time)), 1.0);
 		//color = vec4(smoothstep(0.0,1.0,st.x), 0.0, 0.0, 1.0);
 		//color = vec4(smoothstep(0.0,1.0,st.y), 0.0, 0.0, 1.0);
 		//color = vec4(smoothstep(0.3,0.7,st.x), 0.0, 0.0, 1.0);
-		color = vec4(0.0, 0.0, smoothstep(0.0,0.8, length(st)), 1.0);
+		color = vec4(1.0, 0.0, smoothstep(0.0,.8, length(st)), 1.0);
 		//color = vec4(smoothstep(0.0,1.0,length(st - vec2(0.5))), 0.0, 0.0, 1.0);
-	
+		
 		//simulate1(st);
+		color = mix(color,texture(texture_img[2], fs_uv_coord),0.5);
 	}
 	
 }

@@ -170,7 +170,7 @@ private:
 	const string default_uv_coord_attrib_name = "uv_coord";
 
 	int default_texture_array_loc;
-	const string default_texture_name = "texture_img[0]";
+	const string default_texture_base_name = "texture_img[";
 
 	unsigned int zoom_scroll = 1;
 
@@ -183,12 +183,13 @@ private:
 	unsigned int* textures;
 
 	void activeTextureUnits()  {
-		int loc = ShaderMap::getUniformLocation(default_texture_name);
-		if(loc<0) return;
 		for(int i = 0; i < (int)texture_files.size(); i++)  {
-			glActiveTexture(GL_TEXTURE1+i);
+			int loc = ShaderMap::getUniformLocation((default_texture_base_name+to_string(i)+"]"));
+			if(loc > 0)  {
+				glActiveTexture(GL_TEXTURE1+i);
 				glBindTexture(GL_TEXTURE_2D, textures[i]);
-			glUniform1i(loc+i, i+1);
+				glUniform1i(loc, i+1);
+			}
 		}
 	}
 
@@ -283,8 +284,8 @@ public:
 		unsigned int img_size = sizeof(unsigned char) * w * h * nrChannels;
 		LOG(DEBUG)<<"Image default w: "<<w<<", h: "<<h<<", ch: "<<nrChannels<<", size: "<<img_size<<std::endl;
 
-		default_texture_array_loc = ShaderMap::getUniformLocation(default_texture_name);
-		LOG(DEBUG)<<"Texture location "<< default_texture_name<<" : "<<default_texture_array_loc;
+		default_texture_array_loc = ShaderMap::getUniformLocation(default_texture_base_name+"0]");
+		LOG(DEBUG)<<"Texture location "<< (default_texture_base_name+"0]") << " : " <<default_texture_array_loc;
 
 		if(default_texture_array_loc < 0)  {
 			cerr<<"BAD DEFAULT FRAGMENT SHADERS texture_img[0] not valid location \n";
