@@ -23,7 +23,9 @@ void usage()  {
 			"\t -v   : (optional) your vertex shader file that will be common to all fragments. ('overwrite the default') \n";
 }
 
-void keyboard(GLFWwindow* window, int key, int scancose, int action, int mods);
+void pollingFragmentFiles();
+
+void keyboardHandler(GLFWwindow* window, int key, int scancose, int action, int mods);
 
 static const char *CONTEXT="CONTEX_BASE",
 				  *FPS_TIME="FPS_TIME";
@@ -124,7 +126,7 @@ int main(int argc, char **argv) {
 		_base_system.updateMouseScroll(x, y);
 	});
 
-	OpenGLContext::setKeyboard(keyboard);
+	OpenGLContext::setKeyboard(keyboardHandler);
 
 	loadFragmentFiles(fragments_folder);
 
@@ -171,9 +173,15 @@ int main(int argc, char **argv) {
 
 	glfwSetWindowTitle(OpenGLContext::getCurrent(), programs[current_program].name.c_str());
 
+	//pollingFragmentFiles will be executed in another thread created by TempoMap
+	TempoMap::createTimer("POLLING", pollingFragmentFiles, 500);
+
 	while (!glfwWindowShouldClose(OpenGLContext::getCurrent())) {
 
 		if (TempoMap::getElapsedMill(FPS_TIME) >= 20) {
+
+			std::unique_lock<std::timed_mutex> lk(polling_mutex, std::defer_lock);
+			if(!lk.try_lock_for(std::chrono::microseconds(500)))continue;
 
 			if(programs[current_program].modified)  {
 				try{
@@ -204,6 +212,8 @@ int main(int argc, char **argv) {
 				_base_system.displayDefaultProgram();
 			}
 
+			lk.unlock();
+
 			OpenGLContext::swapBuffers();
 
 			TempoMap::updateStart(FPS_TIME);
@@ -213,14 +223,7 @@ int main(int argc, char **argv) {
 		glfwPollEvents(); //  It MUST be in the main thread
 
 		//this_thread::yield();
-
-		if (TempoMap::getElapsedSeconds("TEST") >= 1)  {
-			LOG(DEBUG)<<"CHECK IF FRAGMENTS ARE MODIFIED";
-			checkFilesModified(fragments_folder);
-			updateModifiedFragment();
-
-			TempoMap::updateStart("TEST");
-		}
+		this_thread::sleep_for(std::chrono::milliseconds(1));
 
 	}
 
@@ -228,13 +231,19 @@ int main(int argc, char **argv) {
 
 	glfwTerminate();
 
-	fprintf(stdout, " MAIN FINISH .");
+	fprintf(stdout, " BYe Bye . musicrizz .");
 
 	exit(EXIT_SUCCESS);
 
 }
 
-void keyboard(GLFWwindow* window, int key, int scancose, int action, int mods)  {
+void pollingFragmentFiles()  {
+	LOG(DEBUG)<<"CHECK IF FRAGMENTS ARE MODIFIED";
+	checkFilesModified(fragments_folder);
+	updateModifiedFragment();
+}
+
+void keyboardHandler(GLFWwindow* window, int key, int scancose, int action, int mods)  {
 	switch (key) {
 	case GLFW_KEY_ESCAPE:
 		if (action == GLFW_PRESS) {

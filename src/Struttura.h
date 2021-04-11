@@ -2,7 +2,7 @@
  * Struttura.h
  *
  *  Created on: Mar 31, 2021
- *      Author: gio
+ *      Author: Giovanni Grandinetti
  */
 
 #ifndef STRUTTURA_H_
@@ -26,9 +26,14 @@ namespace fs = std::filesystem;
 fs::path vertex_shader_file = "resources/default/vertex_default.glsl",//default value
 		 fragments_folder   = "",
 		 textures_folder    = "";
+
 bool recursive = false,
 	 flag_load_Texture = false;
 
+static std::timed_mutex polling_mutex;
+bool flag_files_modified = false;
+
+//--
 bool file_order (string a, string b) {
 	return a.substr(a.find_last_of("/\\")+1) < (b.substr(b.find_last_of("/\\")+1));
 }
@@ -36,6 +41,7 @@ bool(*file_order_pt)(string,string) = file_order;
 //This map have a key = file_name and a value of time of modified end bool flag for modification
 //Ordered per file_name
 map<string, std::pair<fs::file_time_type, bool>, bool(*)(string, string)> fragments_map (file_order_pt);
+//--
 
 set<string> texture_files;
 
@@ -111,7 +117,7 @@ int current_program = 0;
 map<int,PROGRAM_FILE> programs;
 
 void checkFilesModified(fs::path dir)  {
-
+	//LOG(DEBUG)<<"CHECK IF FRAGMENTS ARE MODIFIED ";
 	for (const auto &f : fs::directory_iterator(dir)) {
 		if (f.is_regular_file()) {
 
@@ -119,6 +125,7 @@ void checkFilesModified(fs::path dir)  {
 				if(fragments_map.at(f.path().string()).first != fs::last_write_time(f))  {
 					fragments_map.at(f.path().string()).second = true;
 					fragments_map.at(f.path().string()).first = fs::last_write_time(f);
+					flag_files_modified = true;
 				}
 			}catch (...) {}
 
@@ -129,13 +136,18 @@ void checkFilesModified(fs::path dir)  {
 }
 
 void updateModifiedFragment()  {
-	int pos = 1;
-	for(auto& f : fragments_map)  {
-		if(f.second.second) {
-			programs[pos].modified=true;
-			f.second.second=false;
+	if(flag_files_modified)  {
+		std::lock_guard<std::timed_mutex> lk(polling_mutex);
+		//LOG(DEBUG)<<"UPDATE FRAGMNETS PRGRAM";
+		int pos = 1;
+		for(auto& f : fragments_map)  {
+			if(f.second.second) {
+				programs[pos].modified=true;
+				f.second.second=false;
+			}
+			pos++;
 		}
-		pos++;
+		flag_files_modified = false;
 	}
 }
 
