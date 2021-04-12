@@ -12,7 +12,7 @@ Then you can edit The fragment source code with an editor of your choise, like V
 If the compilation is not successiful it will display an ERROR image and the error will be printed on the console.   
 
 PS:   
-at the moment the errors are printed on the console, but I have to implement a text system for diplay directly in the error Window.
+at the moment the errors are printed on the console, but I have to implement a text system for display directly in the ERROR Window.
    
 
 This is a cpp project with Eclipse.  
@@ -28,6 +28,6 @@ also I used [stb_image.h](https://github.com/nothings/stb/blob/master/stb_image.
 
 
 
-![shadertoy](img.png)
+![todo](img.png)
 
-![shadertoy](img2.png)
+![todo](img2.png)
