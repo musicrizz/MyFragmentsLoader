@@ -7,9 +7,10 @@ You can select the current fragment to display and when you edit the fragment so
 
 For example :   
 You can start the application like ``./MyFragmentsLoader -f fragment_folder/ -r -t texture_forder/``  
-The application load all fragments and images and you can select the current fragment to display with + or - .
-Then you can edit The fragment source code with an editor of your choise, like Visual Studio, and when you save the file ,the application reload the associated program.   
-If the compilation is not successiful it will display an ERROR image and the error will be printed on the console.   
+The application load all fragments and texture images and you can select the current fragment to display with + or - ,   
+then you can edit the fragment source code with an editor of your choise, like Visual Studio, and when you save the file the application reload the associated program.   
+You can use this [fragment shader](https://github.com/musicrizz/MyFragmentsLoader/blob/main/example/fragment_template.glsl) as template.   
+If the compilation is not successiful it will display an ERROR image and the errors will be printed on the console.   
 
 PS:   
 at the moment the errors are printed on the console, but I have to implement a text system for display directly in the ERROR Window.
@@ -31,3 +32,5 @@ also I used [stb_image.h](https://github.com/nothings/stb/blob/master/stb_image.
 ![todo](img.png)
 
 ![todo](img2.png)
+
+
