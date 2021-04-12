@@ -1,20 +1,32 @@
 # MyFragmentsLoader
-My Utility for learn OpenGl stuff with https://thebookofshaders.com/ and https://www.shadertoy.com/
+My Utility for learn OpenGl stuff with [thebookofshaders](https://thebookofshaders.com/) and [shadertoy](https://www.shadertoy.com)
 --------
-It can load multiple glsl programs (" *multiple fragment shaders with one vertex shader in common* ") . You can select the current fragment to display and when you edit the fragment source, current or not, the application reload the associated program.
 
-You can add fragment shaders in the folder of your choise, when the program start it load all shaders and you can switch them with + and -
+It can load *multiple fragment shaders with one vertex shader in common*.   
+You can select the current fragment to display and when you edit the fragment source code, current or not, the application reload the associated program.   
 
-for example you can run this app to view the result and edit the fragment shader with Visual Studio Code.
+For example :   
+You can start the application like ``./MyFragmentsLoader -f fragment_folder/ -r -t texture_forder/``  
+The application load all fragments and images and you can select the current fragment to display with + or - .
+Then you can edit The fragment source code with an editor of your choise, like Visual Studio, and when you save the file ,the application reload the associated program.   
+If the compilation is not successiful it will display an ERROR image and the error will be printed on the console.   
 
-USAGE:   
-$ ./MyFragmetsLoader -f *'fragment_shaders_folder'*  
-	   -f   : specify folder where are located all fragment shaders  
-	   -r   : (optional) set recursive search in subfolder of fragment folder  
-	   -v   : (optional) specify your vertex shader file that will common to all fragment . ('overwrite the default')   
+PS:   
+at the moment the errors are printed on the console, but I have to implement a text system for diplay directly in the error Window.
+   
+
+This is a cpp project with Eclipse.  
+Required lib :   
+* GL
+* GLEW
+* glfw
+* glm
+   
+also I used [stb_image.h](https://github.com/nothings/stb/blob/master/stb_image.h) for loading the texture images and [easylogging++](https://github.com/amrayn/easyloggingpp) for logger.
 
 
-**WORK IN PROGRESS - not complete yet 
+
+
 
 ![shadertoy](img.png)
 

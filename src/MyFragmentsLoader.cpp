@@ -16,11 +16,19 @@ namespace fs = std::filesystem;
 INITIALIZE_EASYLOGGINGPP
 
 void usage()  {
-	cout<<"USAGE: MyFragmentsLoader -f <fragment_shaders_folder> \n"
-			"\t -f   : folder where are located all fragment shaders \n"
-			"\t -r   : (optional) set recursive search in subfolder of fragment folder \n"
-			"\t -t   : (optional) folder of texture images. ('will be loaded in alphabetically order and ca be accessed in fragment with []' - no recursive in sub-forlder)\n"
-			"\t -v   : (optional) your vertex shader file that will be common to all fragments. ('overwrite the default') \n";
+	cout<<"Usage:  \n"
+			"   options: \n"
+			"   -f   : folder where are located all fragment shaders \n\n"
+			"   -r   : set recursive search in subfolder of fragment folder \n\n"
+			"   -t   : folder of texture images. \n"
+			"           The images will be loaded in alphabetically order \n "
+			"           (no recursive  search in sub-folder) \n "
+			"           they can be accessed in the fragment with texture_img[ ] \n\n"
+			"   -v   :  your vertex shader file that will be common to all fragments. \n"
+			"           ('overwrite the default') use the template in resources folder for help\n\n\n"
+			"Examples: \n"
+			"   MyFragmentsLoader -f <fragment_shaders_folder> -r \n"
+			"   MyFragmentsLoader -f <fragment_shaders_folder> -r -t <texture_folder> \n\n";
 }
 
 void pollingFragmentFiles();
