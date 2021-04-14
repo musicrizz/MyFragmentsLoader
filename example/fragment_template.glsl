@@ -4,11 +4,11 @@
 
 //do not modify - binding_point 1 in the cpp code
 layout (std140) uniform CommonUniform
-{     		        //base  //Offset          
-	ivec2 viewport; //  8      0   
-	vec2 mouse;     //  8      8
-	float time;     //  4      16  
-	int zoom;     //  4      20 
+{     		                
+	ivec2 viewport; //viewpor dimension same as the window 
+	vec2 mouse;     //value range [(0,0) , (1,1)] ==> vec2(mouse)/vec2(viewport); //This is done by cpu
+	float time;     //time, in seconds from GLWF is initialized
+	int zoom;       //add by ine by mouse Scroll. min value is 0
 };
 
 //do not modify the name and type of this variables
@@ -25,6 +25,8 @@ out vec4 color;
 
 void main(void)    {
 
+	vec2 st = gl_FragCoord.xy/viewport;//mapping [0 to 1]
+		
 	//Your Calculations
 	
 	
