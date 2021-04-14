@@ -71,7 +71,7 @@ Program* ShaderMap::getProgram(std::string name)  {
 }
 
 unsigned int ShaderMap::getProgramID(std::string name) {
-	return getProgram(name)->getID();
+	return getProgram(name) != nullptr ? getProgram(name)->getID() : -1;
 }
 
 void ShaderMap::program_null()  {
@@ -83,7 +83,7 @@ Program* ShaderMap::getCurrentProgram()  {
 }
 
 unsigned int ShaderMap::getCurrentProgramID()  {
-	return current->getID();
+	return current != nullptr ? current->getID() : -1;
 }
 
 int ShaderMap::getCountPrograms()  {
@@ -91,7 +91,7 @@ int ShaderMap::getCountPrograms()  {
 }
 
 int ShaderMap::getUniformLocation(std::string program, std::string var_name)   {
-	int p = getProgram(program)->getID();
+	int p = getProgramID(program);
 	if(p > 0)  {
 		return glGetUniformLocation(p, var_name.c_str());
 	}
@@ -99,14 +99,14 @@ int ShaderMap::getUniformLocation(std::string program, std::string var_name)   {
 }
 
 int ShaderMap::getUniformLocation(std::string var_name)   {
-	if(current->getID() > 0)  {
+	if(getCurrentProgramID() > 0)  {
 		return glGetUniformLocation(current->getID(), var_name.c_str());
 	}
 	return -1;
 }
 
 int ShaderMap::getUniformBlockIndex(std::string program, std::string var_name) {
-	int p = getProgram(program)->getID();
+	int p = getProgramID(program);
 	if (p > 0) {
 		return glGetUniformBlockIndex(p, var_name.c_str());
 	}
@@ -114,7 +114,7 @@ int ShaderMap::getUniformBlockIndex(std::string program, std::string var_name) {
 }
 
 int ShaderMap::getUniformBlockIndex(std::string var_name) {
-	if (current->getID() > 0) {
+	if (getCurrentProgramID() > 0) {
 		return glGetUniformBlockIndex(current->getID(), var_name.c_str());
 	}
 	return -1;
@@ -129,14 +129,14 @@ void ShaderMap::bindingUniformBlocks(std::string var_name, unsigned int biding_p
 }
 
 void ShaderMap::bindingUniformBlocksForSingleProgram(std::string program, std::string var_name, unsigned int biding_point)   {
-	int id = getProgram(program)->getID();
+	int id = getProgramID(program);
 	if (id > 0) {
 		glUniformBlockBinding(id, getUniformBlockIndex(program, var_name), biding_point);
 	}
 }
 
 int ShaderMap::getAttributeLocation(std::string program, std::string var_name) {
-	int p = getProgram(program)->getID();
+	int p = getProgramID(program);
 	if (p > 0) {
 		return glGetAttribLocation(p, var_name.c_str());
 	}
@@ -144,7 +144,7 @@ int ShaderMap::getAttributeLocation(std::string program, std::string var_name) {
 }
 
 int ShaderMap::getAttributeLocation(std::string var_name) {
-	if (current->getID()) {
+	if (getCurrentProgramID()) {
 		return glGetAttribLocation(current->getID(), var_name.c_str());
 	}
 	return -1;
