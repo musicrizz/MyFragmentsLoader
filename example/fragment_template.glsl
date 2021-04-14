@@ -8,7 +8,7 @@ layout (std140) uniform CommonUniform
 	ivec2 viewport; //viewpor dimension same as the window 
 	vec2 mouse;     //value range [(0,0) , (1,1)] ==> vec2(mouse)/vec2(viewport); //This is done by cpu
 	float time;     //time, in seconds from GLWF is initialized
-	int zoom;       //add by ine by mouse Scroll. min value is 0
+	int zoom;       //add by one by mouse Scroll. min value is 0
 };
 
 //do not modify the name and type of this variables
@@ -16,11 +16,11 @@ layout (std140) uniform CommonUniform
 //you can change the number of texture_img according to the images in the texture folder 
 uniform sampler2D texture_img[5];
 
-in vec2 fs_uv_coord;
+in vec2 uv_coord;
 //------------------------------------
 
 
-out vec4 color;
+out vec4 fragColor;
 
 
 void main(void)    {

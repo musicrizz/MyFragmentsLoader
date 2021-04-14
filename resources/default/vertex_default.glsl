@@ -16,12 +16,12 @@ layout (std140) uniform CommonUniform
 //--------------
 //do not modify the name and type of this variables
 layout(location = 2) in vec4 position;
-layout(location = 3) in vec2 uv_coord;
+layout(location = 3) in vec2 _uv_coord;
 
-out vec2 fs_uv_coord;
+out vec2 uv_coord;
 //--------------
 
 void main(void)    {
-	fs_uv_coord = uv_coord;
+	uv_coord = _uv_coord;
 	gl_Position = position;
 }

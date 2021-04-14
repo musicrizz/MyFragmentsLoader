@@ -167,7 +167,7 @@ private:
 	const char*DEFAULT_TEXTURE_IMG = "resources/default/CompilerError.jpg";
 
 	const string default_vertex_attrib_name = "position";
-	const string default_uv_coord_attrib_name = "uv_coord";
+	const string default_uv_coord_attrib_name = "_uv_coord";
 
 	int default_texture_array_loc;
 	const string default_texture_base_name = "texture_img[";

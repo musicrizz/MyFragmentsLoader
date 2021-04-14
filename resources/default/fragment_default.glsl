@@ -16,15 +16,15 @@ layout (std140) uniform CommonUniform
 //you can change the number of texture_img according to the images in the texture folder 
 uniform sampler2D texture_img[5];
 
-in vec2 fs_uv_coord;
+in vec2 uv_coord;
 //------------------------------------
 
 
-out vec4 color;
+out vec4 fragColor;
 
 
 void main(void)    {
 	
-	color = texture(texture_img[0], fs_uv_coord);
+	fragColor = texture(texture_img[0], uv_coord);
 	
 }
