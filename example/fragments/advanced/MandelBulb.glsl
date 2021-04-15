@@ -4,11 +4,16 @@
 
 //do not modify - binding_point 1 in the cpp code
 layout (std140) uniform CommonUniform
-{     		        //base  //Offset          
-	ivec2 viewport; //  8      0   
-	vec2 mouse;     //  8      8
-	float time;     //  4      16  
-	int zoom;     //  4      20 
+{     		                
+	ivec2 Viewport;  //viewpor dimension same as the window. (in shadertoy is ) iResolution
+	
+	vec2  Mouse;     //value range [(0,0) , (1,1)] ==> vec2(mouse)/vec2(viewport.x, viewport.y-h); 
+					 //This is done by cpu. (0,0) is lower-left corner
+	
+	int   Zoom;      //add by one by mouse Scroll. min value is 0
+	
+	float Time;      //time, in seconds from GLWF is initialized
+	int   TimeDelta; //delta Time in milliseconds
 };
 
 //do not modify the name and type of this variables
@@ -16,10 +21,11 @@ layout (std140) uniform CommonUniform
 //you can change the number of texture_img according to the images in the texture folder 
 uniform sampler2D texture_img[5];
 
-in vec2 fs_uv_coord;
+in vec2 uv_coord;
 //------------------------------------
 
-out vec4 color;
+
+out vec4 fragColor;
 
 
 #if HW_PERFORMANCE==0
@@ -163,8 +169,8 @@ vec3 render( in vec2 p, in mat4 cam )
 	// ray setup
     const float fle = 1.5;
 
-    vec2  sp = (2.0*p-viewport.xy) / viewport.y;
-    float px = 2.0/(viewport.y*fle);
+    vec2  sp = (2.0*p-Viewport.xy) / Viewport.y;
+    float px = 2.0/(Viewport.y*fle);
 
     vec3  ro = vec3( cam[0].w, cam[1].w, cam[2].w );
 	vec3  rd = normalize( (cam*vec4(sp,fle,0.0)).xyz );
@@ -229,7 +235,7 @@ vec3 render( in vec2 p, in mat4 cam )
 }
     
 void main()  {
-    float _time = time*.1;
+    float _time = Time*.1;
 
     // camera
 	float di = 1.4+0.1*cos(.29*_time);
@@ -258,5 +264,5 @@ void main()  {
 	col /= float(AA*AA);
     #endif
 
-	color = vec4( col, 1.0 );
+	fragColor = vec4( col, 1.0 );
 }

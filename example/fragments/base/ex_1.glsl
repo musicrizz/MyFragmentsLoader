@@ -30,9 +30,19 @@ out vec4 fragColor;
 
 void main(void)    {
 
-	vec2 st = gl_FragCoord.xy/Viewport;//mapping [0 to 1]
+	vec2 st = gl_FragCoord.xy/Viewport;//mappatura tra 0 e 1
+
+	//'muose pointer' 
+	if( (st.x > (Mouse.x-0.01) && st.x < (Mouse.x+0.01) )
+		&&
+		(st.y > (Mouse.y-0.01) && st.y < (Mouse.y+0.01) ) ) {
+		fragColor = vec4(0.0,1.0,0.0,1.0);
 		
-	//Your Calculations
+	}else{
+		fragColor = vec4(1.0, 0.0, smoothstep(0.0,.8, length(st)), 1.0);
+
+		fragColor = mix(fragColor, texture(texture_img[2], uv_coord) ,0.2);
+	}
 	
 	
 }

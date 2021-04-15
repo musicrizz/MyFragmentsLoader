@@ -194,6 +194,7 @@ private:
 	}
 
 public:
+	bool flag_update_viewport = true;
 
 	//Binding point for uniform_buffer 'CommonUniform' ,shared among all fragments
 	const unsigned int uniform_binding_point = 1;
@@ -254,16 +255,16 @@ public:
 		LOG(DEBUG)<<OpenGLerror::check("Binding uniform Buffer");
 
 		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
-			glBufferData(GL_UNIFORM_BUFFER, 24, NULL, GL_DYNAMIC_DRAW); // allocate 20 bytes of memory
+			glBufferData(GL_UNIFORM_BUFFER, 28, NULL, GL_DYNAMIC_DRAW); // allocate 20 bytes of memory
 			//init mouse pos e scroll
 			glBufferSubData(GL_UNIFORM_BUFFER, 8, 8, glm::value_ptr(glm::vec2(0.0f, 0.0f)));//mouse position init 0.0
-			glBufferSubData(GL_UNIFORM_BUFFER, 20, 4, reinterpret_cast<void*>(&zoom_scroll) );//zoom_scroll init to 1
+			glBufferSubData(GL_UNIFORM_BUFFER, 16, 4, reinterpret_cast<void*>(&zoom_scroll) );//zoom_scroll init to 1
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		LOG(DEBUG)<<OpenGLerror::check("CREAZIOEN GL_UNIFORM_BUFFER : ")<<endl;
 
 		//Creation textures
 		if(flag_load_Texture)  {
-			LOG(DEBUG)<<"LOAD TEXTURES FILES PATH";
+			LOG(DEBUG)<<"LOAD IMAGES FILES PATH";
 			loadTextureFiles(textures_folder);
 		}
 
@@ -278,7 +279,8 @@ public:
 		int w, h, nrChannels;
 		unsigned char *data = stbi_load(DEFAULT_TEXTURE_IMG, &w, &h, &nrChannels, 0);
 		if(!data) {
-			LOG(ERROR)<<"ERROR LOAD DEFAULT TEXTURE";
+			//LOG(ERROR)<<"ERROR LOAD DEFAULT IMAGE Texture";
+			cerr<<"ERROR LOAD DEFAULT IMAGE Texture";
 			exit(-1);
 		}
 		unsigned int img_size = sizeof(unsigned char) * w * h * nrChannels;
@@ -314,7 +316,7 @@ public:
 		for(auto &f : texture_files)  {
 			data = stbi_load(f.c_str(), &w, &h, &nrChannels, 0);
 			if(!data) {
-				LOG(DEBUG)<<"ERROR LOAD TEXTURE : "<<f;
+				LOG(DEBUG)<<"ERROR LOAD IMAGE: "<<f;
 				index++;
 				continue;
 			}
@@ -381,10 +383,13 @@ public:
 	}
 
 	void updateViewPort() {
-		glViewport(0, 0, viewport_w, viewport_h);
-		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
-			glBufferSubData(GL_UNIFORM_BUFFER, 0, 8, glm::value_ptr(glm::ivec2(viewport_w, viewport_h)));
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		if(flag_update_viewport)  {
+			glViewport(0, 0, viewport_w, viewport_h);
+			glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
+				glBufferSubData(GL_UNIFORM_BUFFER, 0, 8, glm::value_ptr(glm::ivec2(viewport_w, viewport_h)));
+			glBindBuffer(GL_UNIFORM_BUFFER, 0);
+			flag_update_viewport = false;
+		}
 	}
 
 	void updateMousePosition(double x, double y)  {
@@ -393,20 +398,29 @@ public:
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
-	void updateTime()  {
-		float time = float(glfwGetTime());
-		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
-			glBufferSubData(GL_UNIFORM_BUFFER, 16, 4, reinterpret_cast<void*>(&time) );
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
-
 	void updateMouseScroll(double x, double y)  {
 		zoom_scroll += float(y);
 		zoom_scroll < 1 ? zoom_scroll = 1 : 0;
 		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
-			glBufferSubData(GL_UNIFORM_BUFFER, 20, 4, reinterpret_cast<void*>(&zoom_scroll) );
+			glBufferSubData(GL_UNIFORM_BUFFER, 16, 4, reinterpret_cast<void*>(&zoom_scroll) );
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
+
+	void updateTime()  {
+		float time = float(glfwGetTime());
+		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
+			glBufferSubData(GL_UNIFORM_BUFFER, 20, 4, reinterpret_cast<void*>(&time) );
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+
+	void updateDeltaTime()  {
+//		float time = float(glfwGetTime());
+//		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
+//			glBufferSubData(GL_UNIFORM_BUFFER, 16, 4, reinterpret_cast<void*>(&time) );
+//		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+
+
 
 } _base_system;
 

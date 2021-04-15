@@ -15,17 +15,22 @@ namespace fs = std::filesystem;
 #define ELPP_THREAD_SAFE
 INITIALIZE_EASYLOGGINGPP
 
+
 void usage()  {
 	cout<<"Usage:  \n"
 			"   options: \n"
-			"   -f   : folder where are located all fragment shaders \n\n"
+			"   -f   : folder where are located all fragment shaders (mandatory) \n\n"
+
 			"   -r   : set recursive search in subfolder of fragment folder \n\n"
+
 			"   -t   : folder of texture images. \n"
 			"           The images will be loaded in alphabetically order \n "
 			"           (no recursive  search in sub-folder) \n "
 			"           they can be accessed in the fragment with texture_img[ ] \n\n"
+
 			"   -v   :  your vertex shader file that will be common to all fragments. \n"
 			"           ('overwrite the default') use the template in resources folder for help\n\n\n"
+
 			"Examples: \n"
 			"   MyFragmentsLoader -f <fragment_shaders_folder> -r \n"
 			"   MyFragmentsLoader -f <fragment_shaders_folder> -r -t <texture_folder> \n\n";
@@ -36,9 +41,9 @@ void pollingFragmentFiles();
 void keyboardHandler(GLFWwindow* window, int key, int scancose, int action, int mods);
 
 static const char *CONTEXT="CONTEX_BASE",
-				  *FPS_TIME="FPS_TIME";
-
-bool flag_update_viewport=true;
+				  *FPS_TIME="FPS_TIME",
+				  *DELTA_TIME="DELTA_TIME",
+				  *FILE_POLLING_TIMER="FILE_POLLING_TIMER";
 
 int main(int argc, char **argv) {
 
@@ -122,8 +127,7 @@ int main(int argc, char **argv) {
 	OpenGLContext::setReshape(CONTEXT, [](GLFWwindow* window, int width, int height){
 		viewport_w = width;
 		viewport_h = height;
-		viewport_aspect = float(height) / float(width);
-		flag_update_viewport = true;
+		_base_system.flag_update_viewport = true;
 	});
 
 	OpenGLContext::setMouseCursorPos([](GLFWwindow* window, double x, double y){
@@ -153,7 +157,7 @@ int main(int argc, char **argv) {
 			ShaderMap::getProgram(name)->setBindingPoint(_base_system.uniform_binding_point);
 			programs.insert( std::pair<int,PROGRAM_FILE>(current_program++, {name, f.first, "", false,false}) );
 		}catch (ShaderException &e) {
-			LOG(DEBUG)<<"Error program creation : "<< f.first << " :" <<e.what()<<endl;
+			LOG(INFO)<<"Error program creation : "<< f.first << " :" <<e.what()<<endl;
 			programs.insert( std::pair<int,PROGRAM_FILE>(current_program++, {name, f.first, string(e.what()), true, false}) );
 		}
 	}
@@ -174,15 +178,13 @@ int main(int argc, char **argv) {
 	_base_system.initOpenGLBuffers();
 
 	glfwGetFramebufferSize(OpenGLContext::getCurrent(), &viewport_w, &viewport_h);
-	viewport_aspect = float(viewport_h) / float(viewport_w);
-	flag_update_viewport = true;
 
 	glfwSwapInterval(1);
 
 	glfwSetWindowTitle(OpenGLContext::getCurrent(), programs[current_program].name.c_str());
 
 	//pollingFragmentFiles will be executed in another thread created by TempoMap
-	TempoMap::createTimer("POLLING", pollingFragmentFiles, 500);
+	TempoMap::createTimer(FILE_POLLING_TIMER, pollingFragmentFiles, 500);
 
 	while (!glfwWindowShouldClose(OpenGLContext::getCurrent())) {
 
@@ -193,7 +195,7 @@ int main(int argc, char **argv) {
 
 			if(programs[current_program].modified)  {
 				try{
-					LOG(DEBUG)<<"Program "<<programs[current_program].name <<" IS MODIFIED !";
+					LOG(INFO)<<"Program "<<programs[current_program].name <<" IS MODIFIED !";
 					programs[current_program].modified = false;
 					ShaderMap::deleteProgram(programs[current_program].name);
 					ShaderMap::createProgram(programs[current_program].name, vertex_shader_file.c_str(), programs[current_program].path.c_str());
@@ -202,10 +204,10 @@ int main(int argc, char **argv) {
 					ShaderMap::bindingUniformBlocksForSingleProgram(programs[current_program].name, "CommonUniform", _base_system.uniform_binding_point);
 					programs[current_program].error_status=false;
 					programs[current_program].error="";
-					LOG(DEBUG)<<"Program "<<programs[current_program].name <<"SUCCESIFUL COMPILED :)";
+					LOG(INFO)<<"Program "<<programs[current_program].name <<"SUCCESIFUL COMPILED :)";
 
 				}catch (ShaderException &e) {
-					LOG(DEBUG)<<"Error program Re-Compilation : "<< programs[current_program].name << " :" <<e.what()<<endl;
+					LOG(INFO)<<"Error program Re-Compilation : "<< programs[current_program].name << " :" <<e.what()<<endl;
 					programs[current_program].error_status=true;
 					programs[current_program].modified=false;
 					programs[current_program].error=e.what();
@@ -246,7 +248,7 @@ int main(int argc, char **argv) {
 }
 
 void pollingFragmentFiles()  {
-	LOG(DEBUG)<<"CHECK IF FRAGMENTS ARE MODIFIED";
+	//LOG(DEBUG)<<"CHECK IF FRAGMENTS ARE MODIFIED";
 	checkFilesModified(fragments_folder);
 	updateModifiedFragment();
 }
