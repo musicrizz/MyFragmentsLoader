@@ -27,14 +27,9 @@ Required lib :
 also I used [stb_image.h](https://github.com/nothings/stb/blob/master/stb_image.h) for loading the texture images and [easylogging++](https://github.com/amrayn/easyloggingpp) for logger.
 
 
-<img src="readme_res/Cube.png" alt="cube" width="320" height="338" />
-<img src="readme_res/MandelBulb.png" alt="mandel" width="320" height="338"/>
+<img src="readme_res/mandel.gif" alt="mandel" width="600"/>
 
- <video width="600" controls>
-  		<source src="readme_res/FragmentLoader.webm" type="video/webm">
-</video> 
 
-[example video](readme_res/FragmentLoader.webm) 
 
 
 
