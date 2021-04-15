@@ -13,7 +13,7 @@ layout (std140) uniform CommonUniform
 	int   Zoom;      //add by one by mouse Scroll. min value is 0
 	
 	float Time;      //time, in seconds from GLWF is initialized
-	int   TimeDelta; //delta Time in milliseconds
+	int   TimeDelta; //delta Time in milliseconds, caution min is 0
 };
 
 //do not modify the name and type of this variables
@@ -41,7 +41,7 @@ void main(void)    {
 	}else{
 		fragColor = vec4(1.0, 0.0, smoothstep(0.0,.8, length(st)), 1.0);
 
-		fragColor = mix(fragColor, texture(texture_img[2], uv_coord) ,0.2);
+		fragColor = mix(fragColor, texture(texture_img[0], uv_coord) ,0.33);
 	}
 	
 	

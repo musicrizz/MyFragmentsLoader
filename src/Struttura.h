@@ -413,11 +413,10 @@ public:
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
-	void updateDeltaTime()  {
-//		float time = float(glfwGetTime());
-//		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
-//			glBufferSubData(GL_UNIFORM_BUFFER, 16, 4, reinterpret_cast<void*>(&time) );
-//		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	void updateDeltaTime(int delta)  {
+		glBindBuffer(GL_UNIFORM_BUFFER, buffers[UNIFORM]);
+			glBufferSubData(GL_UNIFORM_BUFFER, 24, 4, reinterpret_cast<void*>(&delta) );
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
 

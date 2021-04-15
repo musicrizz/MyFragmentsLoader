@@ -58,7 +58,6 @@ int main(int argc, char **argv) {
 	el::Loggers::reconfigureAllLoggers(log_conf);
 
 	fs::path tmp;
-	cout<<"argc : "<<argc<<endl;
 	for(int i = 1; i < argc; i++) {
 		if(strcmp(argv[i], "-f") == 0 && !setFragmentFolder(argv[i+1])) {
 			cerr<<"ERROR : "<<argv[i+1]<<" is not a valid fragments folder"<<endl;
@@ -186,12 +185,16 @@ int main(int argc, char **argv) {
 	//pollingFragmentFiles will be executed in another thread created by TempoMap
 	TempoMap::createTimer(FILE_POLLING_TIMER, pollingFragmentFiles, 500);
 
+	int delta_time = 0;
+	int fps = 0;
 	while (!glfwWindowShouldClose(OpenGLContext::getCurrent())) {
 
-		if (TempoMap::getElapsedMill(FPS_TIME) >= 20) {
+		if (TempoMap::getElapsedMill(FPS_TIME) >= 33) {
 
 			std::unique_lock<std::timed_mutex> lk(polling_mutex, std::defer_lock);
 			if(!lk.try_lock_for(std::chrono::microseconds(500)))continue;
+
+			TempoMap::updateStart(DELTA_TIME);
 
 			if(programs[current_program].modified)  {
 				try{
@@ -226,9 +229,18 @@ int main(int argc, char **argv) {
 
 			OpenGLContext::swapBuffers();
 
-			TempoMap::updateStart(FPS_TIME);
+			delta_time = TempoMap::getElapsedMill(DELTA_TIME);
+
+			TempoMap::updateStart(FPS_TIME);fps++;
 
 		}
+
+		//Perfect !
+//		if(TempoMap::getElapsedSeconds("DEBUG_TIME_DELTA_AND_FPS") > 1)  {
+//			LOG(DEBUG)<<"Delta :"<<delta_time<<", FPS : "<<fps<<endl;
+//			fps=0;
+//			TempoMap::updateStart("DEBUG_TIME_DELTA_AND_FPS");
+//		}
 
 		glfwPollEvents(); //  It MUST be in the main thread
 

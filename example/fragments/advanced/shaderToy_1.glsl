@@ -13,7 +13,7 @@ layout (std140) uniform CommonUniform
 	int   Zoom;      //add by one by mouse Scroll. min value is 0
 	
 	float Time;      //time, in seconds from GLWF is initialized
-	int   TimeDelta; //delta Time in milliseconds
+	int   TimeDelta; //delta Time in milliseconds, caution min is 0
 };
 
 //do not modify the name and type of this variables
