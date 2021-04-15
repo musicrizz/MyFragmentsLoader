@@ -11,7 +11,6 @@ The application load all fragments in the folder `example/fragments` and texture
 then you can edit the fragment source code with an editor of your choise, and when you save the file the application reload the associated program.   
 You can use this [fragment shader](https://github.com/musicrizz/MyFragmentsLoader/blob/main/example/fragment_template.glsl) as template.   
 If the compilation is not successiful it will display an ERROR image and the errors will be printed on the console.   
-<img src="readme_res/Error.png" alt="Smiley face" width="200"  />
 
 PS:   
 at the moment the errors are printed on the console, but I have to implement a text system for display directly in the ERROR Window.
