@@ -29,7 +29,7 @@ also I used [stb_image.h](https://github.com/nothings/stb/blob/master/stb_image.
 
 
 
-![todo](readme_res/Cube.png)
+![todo](readme_res/Cube.png | width=50)
 
 ![todo](img2.png)
 
