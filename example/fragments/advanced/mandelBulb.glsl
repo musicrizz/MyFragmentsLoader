@@ -24,7 +24,6 @@ uniform sampler2D texture_img[5];
 in vec2 uv_coord;
 //------------------------------------
 
-
 out vec4 fragColor;
 
 

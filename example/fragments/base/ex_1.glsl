@@ -22,7 +22,9 @@ layout (std140) uniform CommonUniform
 uniform sampler2D texture_img[5];
 
 in vec2 uv_coord;
-//------------------------------------
+//---------------------------------------
+
+
 
 
 out vec4 fragColor;
@@ -39,9 +41,9 @@ void main(void)    {
 		fragColor = vec4(0.0,1.0,0.0,1.0);
 		
 	}else{
-		fragColor = vec4(1.0, 0.0, smoothstep(0.0,.8, length(st)), 1.0);
+		fragColor = vec4(1.0, 0.0, smoothstep(0.0,.8, length(st)), 1.0) * texture(texture_img[2], uv_coord);
 
-		fragColor = mix(fragColor, texture(texture_img[0], uv_coord) ,0.33);
+		fragColor = mix(fragColor, texture(texture_img[0], uv_coord * Zoom) ,0.33);
 	}
 	
 	
